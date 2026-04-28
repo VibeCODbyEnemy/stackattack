@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Складской грузчик — настройка скорости толкания (скольжения) ящика</title>
+    <title>Складской грузчик — урон и сбивание ящиков головой</title>
     <style>
         * { user-select: none; touch-action: manipulation; }
-        body { margin: 0; min-height: 100vh; background: #1a2a32; display: flex; justify-content: center; align-items: center; font-family: monospace; }
+        body { margin: 0; min-height: 100vh; background: #1a2a32; display: flex; justify-content: center; align-items: center; font-family: monospace; overflow: hidden; }
         .game-container { position: relative; }
         canvas { display: block; margin: 0 auto; box-shadow: 0 0 20px rgba(0,0,0,0.3); cursor: pointer; background: #2a4a5a; }
         .ui { position: fixed; top: 10px; left: 0; right: 0; display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; z-index: 100; pointer-events: none; }
@@ -52,14 +52,13 @@
     <button id="btnToggleMarkers">🔴 ЗОНЫ</button>
     <button id="btnGodMode">🛡️</button>
     
-    <!-- Панель скорости персонажа -->
     <div class="speed-panel">
         <span>🏃 СКОРОСТЬ</span>
         <button id="btnPlayerSpeedDown" style="background:#aa4444;">-</button>
         <span id="playerSpeedValue" style="min-width:35px;">1.5</span>
         <button id="btnPlayerSpeedUp" style="background:#44aa44;">+</button>
         <div class="separator"></div>
-        <span>📦 ПАДЕНИЕ</span>
+        <span>📦 ПАДЕНИЕ (плавно)</span>
         <button id="btnBoxFallSpeedDown" style="background:#aa4444;">-</button>
         <span id="boxFallSpeedValue" style="min-width:35px;">0.4</span>
         <button id="btnBoxFallSpeedUp" style="background:#44aa44;">+</button>
@@ -71,16 +70,14 @@
         <button id="btnSpeed8">x8</button>
     </div>
     
-    <!-- НАСТРОЙКА ГОРИЗОНТАЛЬНОЙ ЗОНЫ ЗАХВАТА -->
     <div class="capture-panel horiz-panel">
         <span>↔️ ГОРИЗ. ЗОНА (Z)</span>
         <button id="btnHorizCaptureDown" style="background:#aa4444;">−</button>
-        <span id="horizCaptureValue" class="capture-value">6</span>
+        <span id="horizCaptureValue" class="capture-value">5</span>
         <button id="btnHorizCaptureUp" style="background:#44aa44;">+</button>
         <span style="font-size:9px;">пикс. от центра</span>
     </div>
     
-    <!-- НАСТРОЙКА ВЕРТИКАЛЬНОГО ДОПУСКА -->
     <div class="capture-panel vert-panel">
         <span>🔼 ВЕРТ. ДОПУСК (центр)</span>
         <button id="btnVertPushDown" style="background:#aa4444;">−</button>
@@ -89,11 +86,10 @@
         <span style="font-size:9px;">пикс. от центра</span>
     </div>
     
-    <!-- НОВАЯ ПАНЕЛЬ: СКОРОСТЬ ТОЛКАНИЯ (СКОЛЬЖЕНИЕ ЯЩИКА) -->
     <div class="push-speed-panel">
         <span>📦 СКОРОСТЬ ТОЛКАНИЯ</span>
         <button id="btnPushSpeedDown" style="background:#aa4444;">-</button>
-        <span id="pushSpeedValue" class="capture-value">1.0</span>
+        <span id="pushSpeedValue" class="capture-value">0.5</span>
         <button id="btnPushSpeedUp" style="background:#44aa44;">+</button>
         <span style="font-size:9px;">x (чем выше, тем быстрее)</span>
     </div>
@@ -128,7 +124,7 @@
     <div class="move-group"><button id="btnLeft">◀</button><button id="btnRight">▶</button></div>
     <div class="action-group"><button id="btnJump">▲</button></div>
 </div>
-<div class="info" id="infoPanel">⚙️ Скорость толкания (скольжения ящика) регулируется кнопками −/+ | Z + ←/→ для принудительного толкания</div>
+<div class="info" id="infoPanel">❤️ Жизни: 3 | Удар головой по ящику снизу = взрыв без урона</div>
 <div class="title-screen" id="titleScreen">
     <h1>📦 СКЛАДСКОЙ ГРУЗЧИК</h1>
     <button id="startBtn">▶ НАЧАТЬ ИГРУ ◀</button>
@@ -140,10 +136,10 @@ const SAVED_PLAYER_GROUND_Y = 360;
 const SAVED_BOX_GROUND_Y = 370;
 const SAVED_STAND_OFFSET = 12;
 const SAVED_PLAYER_SPEED = 2.5;
-const SAVED_BOX_FALL_SPEED = 0.1;
-const SAVED_HORIZONTAL_TOLERANCE = 6;
+const SAVED_BOX_FALL_SPEED = 3;
+const SAVED_HORIZONTAL_TOLERANCE = 5;
 const SAVED_VERTICAL_PUSH_TOLERANCE = 10;
-const SAVED_PUSH_SPEED_MULTIPLIER = 0.1;  // скорость толкания (скольжения) ящика
+const SAVED_PUSH_SPEED_MULTIPLIER = 0.5;
 // ==================================
 
 const W = 800, H = 400;
@@ -154,17 +150,26 @@ const BASE_SPAWN_DELAY = 2200;
 const DEFAULT_JUMP_POWER = -8;
 const DEFAULT_GRAVITY = 0.5;
 const DEFAULT_MARKERS = [97,135,173,211,249,287,325,363,401,439,477,515,553,591,629,667];
-
 const PLAYER_WIDTH = 32;
 const PLAYER_HEIGHT = 52;
 const PLAYER_HALF_WIDTH = PLAYER_WIDTH/2;
 const PLAYER_HALF_HEIGHT = PLAYER_HEIGHT/2;
+
+const BASE_FALL_SPEED_PX_SEC = 60;
 
 let canvas, ctx;
 let gameRunning = false;
 let gamePaused = false;
 let score = 0;
 let godMode = false;
+
+let lives = 3;
+let damageCooldown = 0;
+const DAMAGE_COOLDOWN_MAX = 0.6;
+
+// Эффект тряски при получении урона
+let shakeAmount = 0;
+let shakeDuration = 0;
 
 let playerGroundY = SAVED_PLAYER_GROUND_Y;
 let boxGroundY = SAVED_BOX_GROUND_Y;
@@ -173,10 +178,9 @@ let playerSpeed = SAVED_PLAYER_SPEED;
 let boxFallSpeedMultiplier = SAVED_BOX_FALL_SPEED;
 let spawnSpeedMultiplier = 1;
 
-// НАСТРОЙКИ ЗАХВАТА И ТОЛКАНИЯ
 let horizontalTolerance = SAVED_HORIZONTAL_TOLERANCE;
 let verticalPushTolerance = SAVED_VERTICAL_PUSH_TOLERANCE;
-let pushSpeedMultiplier = SAVED_PUSH_SPEED_MULTIPLIER;   // множитель скорости скольжения ящика
+let pushSpeedMultiplier = SAVED_PUSH_SPEED_MULTIPLIER;
 
 let playerX = 200, playerY = playerGroundY - PLAYER_HALF_HEIGHT;
 let playerVy = 0;
@@ -200,6 +204,8 @@ let pushCooldown = false;
 let animationFrameId = null;
 let particles = [];
 
+let lastTimestamp = 0;
+
 let images = {};
 let assetsLoaded = false;
 const imageList = {
@@ -209,7 +215,8 @@ const imageList = {
     run3: 'run3.png',
     run4: 'run4.png',
     box: 'box.png',
-    title: 'title.png'
+    title: 'title.png',
+    heart: 'heart.png'
 };
 
 function showToast(msg, isSuccess = true) {
@@ -222,246 +229,18 @@ function showToast(msg, isSuccess = true) {
 }
 
 function getBoxBaseY() { return boxGroundY - BOX_SIZE/2; }
-
-function updatePlayerGround(newY) {
-    let clamped = Math.min(395, Math.max(280, newY));
-    if (playerGroundY === clamped) return;
-    const deltaY = clamped - playerGroundY;
-    playerGroundY = clamped;
-    playerY += deltaY;
-    if (playerY + PLAYER_HALF_HEIGHT >= playerGroundY) {
-        playerY = playerGroundY - PLAYER_HALF_HEIGHT;
-        playerVy = 0;
-        grounded = true;
-    }
-    document.getElementById('playerGroundValue').innerText = Math.round(playerGroundY);
-}
-
-function updateBoxGround(newY) {
-    let clamped = Math.min(395, Math.max(280, newY));
-    if (boxGroundY === clamped) return;
-    boxGroundY = clamped;
-    const allBoxes = [...boxes];
-    stacks.clear();
-    for (let box of allBoxes) {
-        const key = getStackKey(box.x);
-        if (!stacks.has(key)) stacks.set(key, []);
-        stacks.get(key).push(box);
-    }
-    for (let [key, stack] of stacks.entries()) {
-        stack.sort((a,b) => a.y - b.y);
-        for (let i = 0; i < stack.length; i++) {
-            stack[i].y = getBoxBaseY() - i * BOX_SIZE;
-        }
-    }
-    document.getElementById('boxGroundValue').innerText = Math.round(boxGroundY);
-}
-
-function updateStandOffset(delta) {
-    let newOffset = standOnBoxOffset + delta;
-    newOffset = Math.min(30, Math.max(-30, newOffset));
-    if (standOnBoxOffset === newOffset) return;
-    standOnBoxOffset = newOffset;
-    document.getElementById('standOffsetValue').innerText = standOnBoxOffset;
-}
-
-function setHorizontalTolerance(val) {
-    let newVal = Math.min(35, Math.max(2, val));
-    if (horizontalTolerance === newVal) return;
-    horizontalTolerance = newVal;
-    document.getElementById('horizCaptureValue').innerText = horizontalTolerance;
-    showToast(`↔️ Горизонтальный захват: ${horizontalTolerance} пикс.`, true);
-}
-function horizCaptureUp() { if (gameRunning && !gamePaused) setHorizontalTolerance(horizontalTolerance + 1); }
-function horizCaptureDown() { if (gameRunning && !gamePaused) setHorizontalTolerance(horizontalTolerance - 1); }
-
-function setVerticalPushTolerance(val) {
-    let newVal = Math.min(45, Math.max(5, val));
-    if (verticalPushTolerance === newVal) return;
-    verticalPushTolerance = newVal;
-    document.getElementById('vertPushValue').innerText = verticalPushTolerance;
-    showToast(`🔼 Вертикальный допуск: ${verticalPushTolerance} пикс.`, true);
-}
-function vertPushUp() { if (gameRunning && !gamePaused) setVerticalPushTolerance(verticalPushTolerance + 1); }
-function vertPushDown() { if (gameRunning && !gamePaused) setVerticalPushTolerance(verticalPushTolerance - 1); }
-
-// Настройка скорости толкания
-function setPushSpeed(val) {
-    let newVal = Math.min(5.0, Math.max(0.2, val));
-    if (pushSpeedMultiplier === newVal) return;
-    pushSpeedMultiplier = newVal;
-    document.getElementById('pushSpeedValue').innerText = pushSpeedMultiplier.toFixed(1);
-    showToast(`📦 Скорость толкания: x${pushSpeedMultiplier.toFixed(1)}`, true);
-}
-function pushSpeedUp() { if (gameRunning && !gamePaused) setPushSpeed(pushSpeedMultiplier + 0.1); }
-function pushSpeedDown() { if (gameRunning && !gamePaused) setPushSpeed(pushSpeedMultiplier - 0.1); }
-
-function playerGroundUp() { if (gameRunning && !gamePaused) updatePlayerGround(playerGroundY - 5); }
-function playerGroundDown() { if (gameRunning && !gamePaused) updatePlayerGround(playerGroundY + 5); }
-function boxGroundUp() { if (gameRunning && !gamePaused) updateBoxGround(boxGroundY - 5); }
-function boxGroundDown() { if (gameRunning && !gamePaused) updateBoxGround(boxGroundY + 5); }
-function standOffsetUp() { if (gameRunning && !gamePaused) updateStandOffset(2); }
-function standOffsetDown() { if (gameRunning && !gamePaused) updateStandOffset(-2); }
-
-function setPlayerSpeed(newSpeed) {
-    newSpeed = Math.min(12, Math.max(1.0, newSpeed));
-    if (playerSpeed === newSpeed) return;
-    playerSpeed = newSpeed;
-    document.getElementById('playerSpeedValue').innerText = playerSpeed.toFixed(1);
-    showToast(`🏃 Скорость: ${playerSpeed.toFixed(1)}`, true);
-}
-function playerSpeedUp() { if (gameRunning && !gamePaused) setPlayerSpeed(playerSpeed + 0.2); }
-function playerSpeedDown() { if (gameRunning && !gamePaused) setPlayerSpeed(playerSpeed - 0.2); }
-
-function setBoxFallSpeed(mult) {
-    mult = Math.min(3.0, Math.max(0.3, mult));
-    if (boxFallSpeedMultiplier === mult) return;
-    boxFallSpeedMultiplier = mult;
-    document.getElementById('boxFallSpeedValue').innerText = boxFallSpeedMultiplier.toFixed(2);
-    showToast(`📦 Падение ящиков: x${boxFallSpeedMultiplier.toFixed(2)}`, true);
-}
-function boxFallSpeedUp() { if (gameRunning && !gamePaused) setBoxFallSpeed(boxFallSpeedMultiplier + 0.05); }
-function boxFallSpeedDown() { if (gameRunning && !gamePaused) setBoxFallSpeed(boxFallSpeedMultiplier - 0.05); }
-
-// Анимация гравитации (падение) с учётом boxFallSpeedMultiplier
-function applyGravityToBox(box, onComplete) {
-    let targetY = box.y;
-    let below = getBoxBelow(box.x, box.y);
-    if (below) targetY = below.y - BOX_SIZE;
-    else targetY = getBoxBaseY();
-    if (targetY === box.y) { if (onComplete) onComplete(); return; }
-    const startY = box.y;
-    const distance = Math.abs(targetY - startY);
-    const baseDuration = Math.min(350, distance * 2.2);
-    const duration = Math.max(40, baseDuration / Math.max(0.3, boxFallSpeedMultiplier));
-    const startTime = performance.now();
-    function animate(now) {
-        const elapsed = now - startTime;
-        let t = Math.min(1, elapsed / duration);
-        t = Math.sin(t * Math.PI/2);
-        box.y = startY + (targetY - startY) * t;
-        if (t < 1) requestAnimationFrame(animate);
-        else {
-            box.y = targetY;
-            removeFromStack(box);
-            addToStack(box);
-            if (onComplete) onComplete();
-            checkHorizontalLines();
-        }
-    }
-    requestAnimationFrame(animate);
-}
-
-// АНИМАЦИЯ ТОЛКАНИЯ (горизонтальное скольжение) с учётом pushSpeedMultiplier
-function applyHorizontalSlide(box, targetX, onComplete) {
-    const startX = box.x;
-    const distance = Math.abs(targetX - startX);
-    const baseDuration = 120; // базовая длительность в мс
-    const duration = Math.max(30, baseDuration / Math.max(0.2, pushSpeedMultiplier));
-    const startTime = performance.now();
-    function animate(now) {
-        const elapsed = now - startTime;
-        let t = Math.min(1, elapsed / duration);
-        t = Math.sin(t * Math.PI/2);
-        box.x = startX + (targetX - startX) * t;
-        if (t < 1) requestAnimationFrame(animate);
-        else {
-            box.x = targetX;
-            if (onComplete) onComplete();
-        }
-    }
-    requestAnimationFrame(animate);
-}
-
-function syncAllHeights() {
-    if (!gameRunning) return;
-    const allBoxes = [...boxes];
-    stacks.clear();
-    for (let box of allBoxes) {
-        const key = getStackKey(box.x);
-        if (!stacks.has(key)) stacks.set(key, []);
-        stacks.get(key).push(box);
-    }
-    for (let [key, stack] of stacks.entries()) {
-        stack.sort((a,b) => a.y - b.y);
-        for (let i = 0; i < stack.length; i++) {
-            stack[i].y = getBoxBaseY() - i * BOX_SIZE;
-        }
-    }
-    let standingOnBox = false;
-    const feetY = playerY + PLAYER_HALF_HEIGHT;
-    for (let box of boxes) {
-        const boxTop = box.y - BOX_SIZE/2;
-        const boxLeft = box.x - BOX_SIZE/2;
-        const boxRight = box.x + BOX_SIZE/2;
-        if (playerX + PLAYER_HALF_WIDTH > boxLeft && playerX - PLAYER_HALF_WIDTH < boxRight) {
-            if (Math.abs(feetY - boxTop) < 15) {
-                playerY = boxTop - standOnBoxOffset - PLAYER_HALF_HEIGHT;
-                playerVy = 0;
-                grounded = true;
-                standingOnBox = true;
-                break;
-            }
-        }
-    }
-    if (!standingOnBox && playerY + PLAYER_HALF_HEIGHT > playerGroundY) {
-        playerY = playerGroundY - PLAYER_HALF_HEIGHT;
-        playerVy = 0;
-        grounded = true;
-    }
-    document.getElementById('playerGroundValue').innerText = Math.round(playerGroundY);
-    document.getElementById('boxGroundValue').innerText = Math.round(boxGroundY);
-    document.getElementById('standOffsetValue').innerText = standOnBoxOffset;
-    showToast(`✅ Синхронизировано: гор.зона=${horizontalTolerance} верт.допуск=${verticalPushTolerance} скор.толк.=${pushSpeedMultiplier.toFixed(1)}`, true);
-}
-
-function saveFullConfig() {
-    const fullConfig = `// ===== ПОЛНАЯ КОНФИГУРАЦИЯ =====
-const SAVED_PLAYER_GROUND_Y = ${playerGroundY};
-const SAVED_BOX_GROUND_Y = ${boxGroundY};
-const SAVED_STAND_OFFSET = ${standOnBoxOffset};
-const SAVED_PLAYER_SPEED = ${playerSpeed};
-const SAVED_BOX_FALL_SPEED = ${boxFallSpeedMultiplier};
-const SAVED_HORIZONTAL_TOLERANCE = ${horizontalTolerance};
-const SAVED_VERTICAL_PUSH_TOLERANCE = ${verticalPushTolerance};
-const SAVED_PUSH_SPEED_MULTIPLIER = ${pushSpeedMultiplier};
-// ===========================================`;
-    navigator.clipboard.writeText(fullConfig).then(() => {
-        showToast(`💾 Конфигурация скопирована`, true);
-    }).catch(() => alert(`Не удалось скопировать`));
-}
-
-function saveToCode() {
-    const configCode = `// ===== НАСТРОЙКИ ТОЛКАНИЯ =====
-const SAVED_HORIZONTAL_TOLERANCE = ${horizontalTolerance};
-const SAVED_VERTICAL_PUSH_TOLERANCE = ${verticalPushTolerance};
-const SAVED_PUSH_SPEED_MULTIPLIER = ${pushSpeedMultiplier};
-// ===========================================`;
-    navigator.clipboard.writeText(configCode).then(() => {
-        showToast(`📋 Настройки толкания скопированы`, true);
-    }).catch(() => alert(`Скопируйте вручную`));
-}
-
-function loadAssets(callback) {
-    let loaded = 0;
-    const total = Object.keys(imageList).length;
-    for (let [key, src] of Object.entries(imageList)) {
-        const img = new Image();
-        img.onload = () => { loaded++; if (loaded===total) { assetsLoaded=true; callback(); } };
-        img.onerror = () => { console.warn(`Не загружено ${src}`); loaded++; if (loaded===total) { assetsLoaded=true; callback(); } };
-        img.src = src;
-        images[key] = img;
-    }
-}
-
 function getStackKey(x) { return Math.round(x / BOX_SIZE) * BOX_SIZE; }
+
 function addToStack(box) {
     const key = getStackKey(box.x);
     if (!stacks.has(key)) stacks.set(key, []);
     const stack = stacks.get(key);
     if (!stack.includes(box)) stack.push(box);
     stack.sort((a,b) => a.y - b.y);
-    for (let i=0; i<stack.length; i++) stack[i].y = getBoxBaseY() - i*BOX_SIZE;
+    for (let i=0; i<stack.length; i++) {
+        stack[i].y = getBoxBaseY() - i*BOX_SIZE;
+        if (stack[i].isFalling) stack[i].isFalling = false;
+    }
 }
 function removeFromStack(box) {
     const key = getStackKey(box.x);
@@ -472,15 +251,6 @@ function removeFromStack(box) {
         if (stack.length===0) stacks.delete(key);
         else for (let i=0; i<stack.length; i++) stack[i].y = getBoxBaseY() - i*BOX_SIZE;
     }
-}
-function getBoxBelow(x, y) {
-    for (let box of boxes) {
-        if (Math.abs(box.x - x) < BOX_SIZE-2) {
-            const boxTop = box.y - BOX_SIZE/2;
-            if (Math.abs(boxTop - (y + PLAYER_HEIGHT)) < 10) return box;
-        }
-    }
-    return null;
 }
 
 function isBoxMovableHorizontally(box) {
@@ -499,7 +269,6 @@ function isBoxMovableHorizontally(box) {
     return true;
 }
 
-// Определение ящика перед персонажем (центр персонажа — центр ящика)
 function getBoxInFront(dir) {
     if (dir === 0) return null;
     const playerFrontX = playerX + (dir === 1 ? PLAYER_HALF_WIDTH : -PLAYER_HALF_WIDTH);
@@ -532,6 +301,166 @@ function getBoxInFront(dir) {
     return bestBox;
 }
 
+function getTargetYForBox(box, ignoreFalling = false) {
+    const key = getStackKey(box.x);
+    let stackItems = [];
+    if (stacks.has(key)) {
+        stackItems = stacks.get(key).filter(b => b !== box && (!b.isFalling || ignoreFalling));
+    }
+    if (!ignoreFalling) {
+        for (let other of boxes) {
+            if (other !== box && other.isFalling && Math.abs(other.x - box.x) < BOX_SIZE-2 && other.fallTargetY !== undefined) {
+                if (!stackItems.includes(other)) stackItems.push(other);
+            }
+        }
+    }
+    let height = stackItems.length;
+    return getBoxBaseY() - height * BOX_SIZE;
+}
+
+function startFalling(box, targetY) {
+    if (!box.active) return;
+    box.isFalling = true;
+    box.fallTargetY = targetY;
+    box.fallStartY = box.y;
+    if (Math.abs(box.y - targetY) < 0.5) {
+        box.isFalling = false;
+        box.y = targetY;
+        addToStack(box);
+        checkHorizontalLines();
+    }
+}
+
+function updateFallingBoxes(deltaSec) {
+    let anyFinished = false;
+    for (let box of boxes) {
+        if (!box.active) continue;
+        if (box.isFalling && box.fallTargetY !== undefined) {
+            const currentFallSpeed = BASE_FALL_SPEED_PX_SEC * boxFallSpeedMultiplier;
+            let step = currentFallSpeed * deltaSec;
+            const diff = box.fallTargetY - box.y;
+            const direction = (diff > 0) ? 1 : -1;
+            if (Math.abs(diff) < step) {
+                box.y = box.fallTargetY;
+                box.isFalling = false;
+                addToStack(box);
+                anyFinished = true;
+            } else {
+                box.y += direction * step;
+            }
+        }
+    }
+    if (anyFinished) checkHorizontalLines();
+}
+
+// Уничтожение ящика с эффектом взрыва
+function destroyBox(box, addScore = true) {
+    if (!box || !box.active) return;
+    addExplosion(box.x, box.y);
+    const idx = boxes.indexOf(box);
+    if (idx !== -1) boxes.splice(idx, 1);
+    removeFromStack(box);
+    box.active = false;
+    if (addScore) {
+        score += 20;
+        document.getElementById('scoreBoard').innerHTML = `ОЧКИ: ${score}`;
+    }
+}
+
+// Эффект тряски при уроне
+function applyDamageShake() {
+    shakeAmount = 8;
+    shakeDuration = 0.3; // секунд
+}
+
+function updateShake(deltaSec) {
+    if (shakeDuration > 0) {
+        shakeDuration -= deltaSec;
+        if (shakeDuration <= 0) shakeAmount = 0;
+        else {
+            // Осцилляция затухает
+            shakeAmount = Math.max(0, shakeAmount - deltaSec * 20);
+        }
+    } else {
+        shakeAmount = 0;
+    }
+}
+
+// Проверка урона и ударов головой
+function checkCollisionWithBoxes(deltaSec) {
+    if (godMode) return;
+    if (damageCooldown > 0) {
+        damageCooldown -= deltaSec;
+        if (damageCooldown < 0) damageCooldown = 0;
+    }
+
+    for (let box of boxes) {
+        if (!box.active) continue;
+        // Границы ящика
+        const boxLeft = box.x - BOX_SIZE/2;
+        const boxRight = box.x + BOX_SIZE/2;
+        const boxTop = box.y - BOX_SIZE/2;
+        const boxBottom = box.y + BOX_SIZE/2;
+        // Границы игрока
+        const playerLeft = playerX - PLAYER_HALF_WIDTH;
+        const playerRight = playerX + PLAYER_HALF_WIDTH;
+        const playerTop = playerY - PLAYER_HALF_HEIGHT;
+        const playerBottom = playerY + PLAYER_HALF_HEIGHT;
+        
+        // Есть ли пересечение?
+        if (playerRight > boxLeft && playerLeft < boxRight && playerBottom > boxTop && playerTop < boxBottom) {
+            // Определяем направление столкновения
+            // Вертикальное перекрытие
+            const overlapTop = playerBottom - boxTop;    // игрок снизу касается верха ящика (стояние)
+            const overlapBottom = boxBottom - playerTop; // игрок сверху касается низа ящика (удар головой)
+            const overlapLeft = playerRight - boxLeft;
+            const overlapRight = boxRight - playerLeft;
+            
+            const minVerticalOverlap = Math.min(overlapTop, overlapBottom);
+            const minHorizontalOverlap = Math.min(overlapLeft, overlapRight);
+            
+            // Приоритет вертикального столкновения
+            if (minVerticalOverlap < minHorizontalOverlap) {
+                // Столкновение сверху или снизу
+                if (overlapTop < overlapBottom && overlapTop > 0) {
+                    // Игрок сверху наступает на ящик (стояние) — не трогаем, обрабатывается в физике
+                    continue;
+                } else if (overlapBottom < overlapTop && overlapBottom > 0) {
+                    // Игрок снизу, удар головой (прыжок)
+                    // ВАЖНО: игрок должен двигаться вверх (Vy < 0) или хотя бы не падать сильно
+                    if (playerVy < 0) {
+                        // Сбиваем ящик, урона нет
+                        destroyBox(box, true);
+                        showToast("💥 Ящик сбит головой! +20 очков", true);
+                        // Небольшой отскок (по желанию)
+                        playerVy = Math.min(playerVy, -2);
+                        continue;
+                    }
+                }
+            }
+            // Если не сработало условие удара головой — проверяем, не падает ли ящик на голову
+            // Падающий ящик сверху (движется вниз и его нижняя часть заходит в верхнюю часть игрока)
+            if (box.isFalling && box.fallTargetY > box.y) { // падает вниз
+                // Доп. проверка: если ящик находится выше игрока и касается его головы
+                if (boxBottom > playerTop && box.y < playerY) {
+                    if (damageCooldown <= 0 && !godMode) {
+                        lives--;
+                        damageCooldown = DAMAGE_COOLDOWN_MAX;
+                        applyDamageShake();
+                        showToast(`❤️ Потеряно сердце! Осталось: ${lives}`, false);
+                        destroyBox(box, false); // ящик взрывается без начисления очков
+                        if (lives <= 0) {
+                            gameOver("У вас закончились жизни!");
+                            return;
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+
 function tryPushBox(box, direction, force = false) {
     if (pushCooldown || exploding) return false;
     if (!force) {
@@ -551,16 +480,43 @@ function tryPushBox(box, direction, force = false) {
         if (Math.abs(other.x - newX) < BOX_SIZE - 1 && Math.abs(other.y - box.y) < BOX_SIZE/2) return false;
     }
     pushCooldown = true;
+    
     removeFromStack(box);
-    // анимируем горизонтальное скольжение с учётом pushSpeedMultiplier
+    box.isFalling = false;
+    
+    const oldX = box.x;
+    box.x = newX;
+    const newTargetY = getTargetYForBox(box, true);
+    box.x = oldX;
+    
     applyHorizontalSlide(box, newX, () => {
-        addToStack(box);
-        applyGravityToBox(box, () => { pushCooldown = false; });
-        checkHorizontalLines();
+        startFalling(box, newTargetY);
+        pushCooldown = false;
     });
+    
     box.tint = force ? '#ffdd88' : '#aaffcc';
     setTimeout(() => { if (box.active && box.tint !== '#ffdd88') box.tint = null; }, 150);
     return true;
+}
+
+function applyHorizontalSlide(box, targetX, onComplete) {
+    const startX = box.x;
+    const distance = Math.abs(targetX - startX);
+    const baseDuration = 120;
+    const duration = Math.max(30, baseDuration / Math.max(0.2, pushSpeedMultiplier));
+    const startTime = performance.now();
+    function animate(now) {
+        const elapsed = now - startTime;
+        let t = Math.min(1, elapsed / duration);
+        t = Math.sin(t * Math.PI/2);
+        box.x = startX + (targetX - startX) * t;
+        if (t < 1) requestAnimationFrame(animate);
+        else {
+            box.x = targetX;
+            if (onComplete) onComplete();
+        }
+    }
+    requestAnimationFrame(animate);
 }
 
 function forcePushBoxes() {
@@ -609,10 +565,7 @@ function checkHorizontalLines() {
         destroyed += row.length;
         for (let b of row) {
             if (b.active) {
-                addExplosion(b.x, b.y);
-                const idx = boxes.indexOf(b);
-                if (idx!==-1) boxes.splice(idx,1);
-                removeFromStack(b);
+                destroyBox(b, false);
             }
         }
     }
@@ -631,6 +584,106 @@ function addExplosion(x,y) {
     }
 }
 
+function updatePlayerGround(newY) {
+    let clamped = Math.min(395, Math.max(280, newY));
+    if (playerGroundY === clamped) return;
+    const deltaY = clamped - playerGroundY;
+    playerGroundY = clamped;
+    playerY += deltaY;
+    if (playerY + PLAYER_HALF_HEIGHT >= playerGroundY) {
+        playerY = playerGroundY - PLAYER_HALF_HEIGHT;
+        playerVy = 0;
+        grounded = true;
+    }
+    document.getElementById('playerGroundValue').innerText = Math.round(playerGroundY);
+}
+
+function updateBoxGround(newY) {
+    let clamped = Math.min(395, Math.max(280, newY));
+    if (boxGroundY === clamped) return;
+    boxGroundY = clamped;
+    const allBoxes = [...boxes];
+    stacks.clear();
+    for (let box of allBoxes) {
+        const key = getStackKey(box.x);
+        if (!stacks.has(key)) stacks.set(key, []);
+        stacks.get(key).push(box);
+    }
+    for (let [key, stack] of stacks.entries()) {
+        stack.sort((a,b) => a.y - b.y);
+        for (let i = 0; i < stack.length; i++) {
+            stack[i].y = getBoxBaseY() - i * BOX_SIZE;
+            if (stack[i].isFalling) stack[i].isFalling = false;
+        }
+    }
+    document.getElementById('boxGroundValue').innerText = Math.round(boxGroundY);
+}
+
+function updateStandOffset(delta) {
+    let newOffset = standOnBoxOffset + delta;
+    newOffset = Math.min(30, Math.max(-30, newOffset));
+    if (standOnBoxOffset === newOffset) return;
+    standOnBoxOffset = newOffset;
+    document.getElementById('standOffsetValue').innerText = standOnBoxOffset;
+}
+
+function setHorizontalTolerance(val) {
+    let newVal = Math.min(35, Math.max(2, val));
+    if (horizontalTolerance === newVal) return;
+    horizontalTolerance = newVal;
+    document.getElementById('horizCaptureValue').innerText = horizontalTolerance;
+    showToast(`↔️ Горизонтальный захват: ${horizontalTolerance} пикс.`, true);
+}
+function horizCaptureUp() { if (gameRunning && !gamePaused) setHorizontalTolerance(horizontalTolerance + 1); }
+function horizCaptureDown() { if (gameRunning && !gamePaused) setHorizontalTolerance(horizontalTolerance - 1); }
+
+function setVerticalPushTolerance(val) {
+    let newVal = Math.min(45, Math.max(5, val));
+    if (verticalPushTolerance === newVal) return;
+    verticalPushTolerance = newVal;
+    document.getElementById('vertPushValue').innerText = verticalPushTolerance;
+    showToast(`🔼 Вертикальный допуск: ${verticalPushTolerance} пикс.`, true);
+}
+function vertPushUp() { if (gameRunning && !gamePaused) setVerticalPushTolerance(verticalPushTolerance + 1); }
+function vertPushDown() { if (gameRunning && !gamePaused) setVerticalPushTolerance(verticalPushTolerance - 1); }
+
+function setPushSpeed(val) {
+    let newVal = Math.min(5.0, Math.max(0.2, val));
+    if (pushSpeedMultiplier === newVal) return;
+    pushSpeedMultiplier = newVal;
+    document.getElementById('pushSpeedValue').innerText = pushSpeedMultiplier.toFixed(1);
+    showToast(`📦 Скорость толкания: x${pushSpeedMultiplier.toFixed(1)}`, true);
+}
+function pushSpeedUp() { if (gameRunning && !gamePaused) setPushSpeed(pushSpeedMultiplier + 0.1); }
+function pushSpeedDown() { if (gameRunning && !gamePaused) setPushSpeed(pushSpeedMultiplier - 0.1); }
+
+function playerGroundUp() { if (gameRunning && !gamePaused) updatePlayerGround(playerGroundY - 5); }
+function playerGroundDown() { if (gameRunning && !gamePaused) updatePlayerGround(playerGroundY + 5); }
+function boxGroundUp() { if (gameRunning && !gamePaused) updateBoxGround(boxGroundY - 5); }
+function boxGroundDown() { if (gameRunning && !gamePaused) updateBoxGround(boxGroundY + 5); }
+function standOffsetUp() { if (gameRunning && !gamePaused) updateStandOffset(2); }
+function standOffsetDown() { if (gameRunning && !gamePaused) updateStandOffset(-2); }
+
+function setPlayerSpeed(newSpeed) {
+    newSpeed = Math.min(12, Math.max(1.0, newSpeed));
+    if (playerSpeed === newSpeed) return;
+    playerSpeed = newSpeed;
+    document.getElementById('playerSpeedValue').innerText = playerSpeed.toFixed(1);
+    showToast(`🏃 Скорость: ${playerSpeed.toFixed(1)}`, true);
+}
+function playerSpeedUp() { if (gameRunning && !gamePaused) setPlayerSpeed(playerSpeed + 0.2); }
+function playerSpeedDown() { if (gameRunning && !gamePaused) setPlayerSpeed(playerSpeed - 0.2); }
+
+function setBoxFallSpeed(mult) {
+    mult = Math.min(3.0, Math.max(0.2, mult));
+    if (boxFallSpeedMultiplier === mult) return;
+    boxFallSpeedMultiplier = mult;
+    document.getElementById('boxFallSpeedValue').innerText = boxFallSpeedMultiplier.toFixed(2);
+    showToast(`📦 Скорость падения: ${(BASE_FALL_SPEED_PX_SEC * boxFallSpeedMultiplier).toFixed(1)} пикс/сек`, true);
+}
+function boxFallSpeedUp() { if (gameRunning && !gamePaused) setBoxFallSpeed(boxFallSpeedMultiplier + 0.05); }
+function boxFallSpeedDown() { if (gameRunning && !gamePaused) setBoxFallSpeed(boxFallSpeedMultiplier - 0.05); }
+
 function initMarkers() { markers = DEFAULT_MARKERS.map(x=>({x})); updateBounds(); }
 function updateBounds() {
     if (!markers.length) { leftBound=0; rightBound=800; return; }
@@ -642,25 +695,93 @@ function getRandomMarkerX() { return markers.length ? markers[Math.floor(Math.ra
 
 function spawnBox() {
     if (!gameRunning || gamePaused || exploding) return;
-    const targetX = getRandomMarkerX();
-    const key = getStackKey(targetX + BOX_SIZE/2);
+    const targetX = getRandomMarkerX() + BOX_SIZE/2;
+    const key = getStackKey(targetX);
     const stackHeight = stacks.has(key) ? stacks.get(key).length : 0;
     if (stackHeight >= MAX_STACK) { gameOver(`Высота ${MAX_STACK}!`); return; }
     const targetY = getBoxBaseY() - stackHeight * BOX_SIZE;
-    const box = { x: targetX + BOX_SIZE/2, y: 20, active: true, tint: null };
+    const box = { x: targetX, y: 20, active: true, tint: null, isFalling: true, fallTargetY: targetY, fallStartY: 20 };
     boxes.push(box);
-    const startY = box.y;
-    const duration = Math.min(400, Math.abs(targetY-startY)*2);
-    const startTime = performance.now();
-    function animate(now) {
-        const elapsed = now - startTime;
-        let t = Math.min(1, elapsed/duration);
-        t = t*t;
-        box.y = startY + (targetY-startY)*t;
-        if (t<1) requestAnimationFrame(animate);
-        else { box.y = targetY; addToStack(box); checkHorizontalLines(); }
+}
+
+function syncAllHeights() {
+    if (!gameRunning) return;
+    const allBoxes = [...boxes];
+    stacks.clear();
+    for (let box of allBoxes) {
+        const key = getStackKey(box.x);
+        if (!stacks.has(key)) stacks.set(key, []);
+        stacks.get(key).push(box);
     }
-    requestAnimationFrame(animate);
+    for (let [key, stack] of stacks.entries()) {
+        stack.sort((a,b) => a.y - b.y);
+        for (let i = 0; i < stack.length; i++) {
+            const targetY = getBoxBaseY() - i * BOX_SIZE;
+            stack[i].y = targetY;
+            if (stack[i].isFalling) stack[i].isFalling = false;
+        }
+    }
+    let standingOnBox = false;
+    const feetY = playerY + PLAYER_HALF_HEIGHT;
+    for (let box of boxes) {
+        const boxTop = box.y - BOX_SIZE/2;
+        const boxLeft = box.x - BOX_SIZE/2;
+        const boxRight = box.x + BOX_SIZE/2;
+        if (playerX + PLAYER_HALF_WIDTH > boxLeft && playerX - PLAYER_HALF_WIDTH < boxRight) {
+            if (Math.abs(feetY - boxTop) < 15) {
+                playerY = boxTop - standOnBoxOffset - PLAYER_HALF_HEIGHT;
+                playerVy = 0;
+                grounded = true;
+                standingOnBox = true;
+                break;
+            }
+        }
+    }
+    if (!standingOnBox && playerY + PLAYER_HALF_HEIGHT > playerGroundY) {
+        playerY = playerGroundY - PLAYER_HALF_HEIGHT;
+        playerVy = 0;
+        grounded = true;
+    }
+    showToast(`✅ Синхронизировано | Скорость падения: ${(BASE_FALL_SPEED_PX_SEC * boxFallSpeedMultiplier).toFixed(1)} px/сек`, true);
+}
+
+function saveFullConfig() {
+    const fullConfig = `// ===== ПОЛНАЯ КОНФИГУРАЦИЯ =====
+const SAVED_PLAYER_GROUND_Y = ${playerGroundY};
+const SAVED_BOX_GROUND_Y = ${boxGroundY};
+const SAVED_STAND_OFFSET = ${standOnBoxOffset};
+const SAVED_PLAYER_SPEED = ${playerSpeed};
+const SAVED_BOX_FALL_SPEED = ${boxFallSpeedMultiplier};
+const SAVED_HORIZONTAL_TOLERANCE = ${horizontalTolerance};
+const SAVED_VERTICAL_PUSH_TOLERANCE = ${verticalPushTolerance};
+const SAVED_PUSH_SPEED_MULTIPLIER = ${pushSpeedMultiplier};
+// ===========================================`;
+    navigator.clipboard.writeText(fullConfig).then(() => {
+        showToast(`💾 Конфигурация скопирована`, true);
+    }).catch(() => alert(`Не удалось скопировать`));
+}
+
+function saveToCode() {
+    const configCode = `// ===== НАСТРОЙКИ ТОЛКАНИЯ =====
+const SAVED_HORIZONTAL_TOLERANCE = ${horizontalTolerance};
+const SAVED_VERTICAL_PUSH_TOLERANCE = ${verticalPushTolerance};
+const SAVED_PUSH_SPEED_MULTIPLIER = ${pushSpeedMultiplier};
+// ===========================================`;
+    navigator.clipboard.writeText(configCode).then(() => {
+        showToast(`📋 Настройки толкания скопированы`, true);
+    }).catch(() => alert(`Скопируйте вручную`));
+}
+
+function loadAssets(callback) {
+    let loaded = 0;
+    const total = Object.keys(imageList).length;
+    for (let [key, src] of Object.entries(imageList)) {
+        const img = new Image();
+        img.onload = () => { loaded++; if (loaded===total) { assetsLoaded=true; callback(); } };
+        img.onerror = () => { console.warn(`Не загружено ${src}`); loaded++; if (loaded===total) { assetsLoaded=true; callback(); } };
+        img.src = src;
+        images[key] = img;
+    }
 }
 
 function gameOver(reason) {
@@ -680,6 +801,9 @@ function fullRestart() {
     gameRunning = false;
     gamePaused = false;
     score = 0;
+    lives = 3;
+    damageCooldown = 0;
+    shakeAmount = 0;
     leftPressed = false; rightPressed = false;
     forcePushActive = false; forcePushDirection = 0;
     boxes = []; stacks.clear(); exploding = false; pushCooldown = false; particles = [];
@@ -712,16 +836,54 @@ function fullRestart() {
     const delayMs = BASE_SPAWN_DELAY / Math.max(0.5, spawnSpeedMultiplier);
     spawnInterval = setInterval(() => spawnBox(), delayMs);
     if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    lastTimestamp = 0;
     animationFrameId = requestAnimationFrame(gameLoop);
-    showToast(`🔄 Рестарт | Скор.толкания=${pushSpeedMultiplier.toFixed(1)} | Z+←/→`);
+    showToast(`🔄 Рестарт | Жизни: ${lives} | Падение: ${(BASE_FALL_SPEED_PX_SEC * boxFallSpeedMultiplier).toFixed(1)} px/сек`);
 }
 
 let jumpRequested = false;
 function jump() { if (gameRunning && !gamePaused) jumpRequested = true; }
 
-function gameLoop() {
-    if (!gameRunning || gamePaused) { animationFrameId = requestAnimationFrame(gameLoop); return; }
-    
+function drawHearts() {
+    const heartImg = images.heart;
+    const size = 28;
+    const spacing = 32;
+    const startX = 10;
+    const startY = 8;
+    for (let i = 0; i < lives; i++) {
+        if (heartImg && heartImg.complete) {
+            ctx.drawImage(heartImg, startX + i * spacing, startY, size, size);
+        } else {
+            ctx.fillStyle = '#ff3366';
+            ctx.beginPath();
+            const x = startX + i * spacing + size/2;
+            const y = startY + size/2;
+            const r = size/2;
+            ctx.moveTo(x, y + r/2);
+            ctx.bezierCurveTo(x, y - r/2, x - r, y - r/2, x - r, y);
+            ctx.bezierCurveTo(x - r, y + r/2, x, y + r, x, y + r);
+            ctx.bezierCurveTo(x, y + r, x + r, y + r/2, x + r, y);
+            ctx.bezierCurveTo(x + r, y - r/2, x, y - r/2, x, y + r/2);
+            ctx.fill();
+        }
+    }
+}
+
+function gameLoop(nowMs) {
+    if (!gameRunning || gamePaused) {
+        animationFrameId = requestAnimationFrame(gameLoop);
+        return;
+    }
+    if (!lastTimestamp) lastTimestamp = nowMs;
+    let deltaMs = Math.min(100, nowMs - lastTimestamp);
+    let deltaSec = deltaMs / 1000;
+    if (deltaSec <= 0) {
+        lastTimestamp = nowMs;
+        animationFrameId = requestAnimationFrame(gameLoop);
+        return;
+    }
+    lastTimestamp = nowMs;
+
     let moveLeft = leftPressed, moveRight = rightPressed;
     if (moveLeft && !moveRight) { playerX -= playerSpeed * spawnSpeedMultiplier; lastDir = 'left'; }
     else if (moveRight && !moveLeft) { playerX += playerSpeed * spawnSpeedMultiplier; lastDir = 'right'; }
@@ -735,7 +897,7 @@ function gameLoop() {
         forcePushDirection = 0;
     }
     
-    // Коллизии
+    // Горизонтальные коллизии с ящиками (отталкивание)
     for (let box of boxes) {
         const boxLeft = box.x - BOX_SIZE/2, boxRight = box.x + BOX_SIZE/2;
         const boxTop = box.y - BOX_SIZE/2, boxBottom = box.y + BOX_SIZE/2;
@@ -753,7 +915,10 @@ function gameLoop() {
     }
     jumpRequested = false;
     
-    if (!grounded) { playerVy += DEFAULT_GRAVITY * spawnSpeedMultiplier; playerY += playerVy; }
+    if (!grounded) { 
+        playerVy += DEFAULT_GRAVITY * spawnSpeedMultiplier; 
+        playerY += playerVy; 
+    }
     
     let platformY = null;
     const feetY = playerY + PLAYER_HALF_HEIGHT;
@@ -773,15 +938,31 @@ function gameLoop() {
     
     playerX = Math.min(rightBound - PLAYER_HALF_WIDTH, Math.max(leftBound + PLAYER_HALF_WIDTH, playerX));
     
-    // Пассивное толкание без Z
     if (!pushCooldown && !exploding && !forcePushActive && (moveLeft || moveRight)) {
         const dir = moveLeft ? -1 : 1;
         const targetBox = getBoxInFront(dir);
         if (targetBox) tryPushBox(targetBox, dir, false);
     }
     
+    updateFallingBoxes(deltaSec);
+    
+    // Проверка столкновений (урон / сбивание)
+    checkCollisionWithBoxes(deltaSec);
+    if (lives <= 0) return;
+    
+    updateShake(deltaSec);
+    
     updateParticles();
-    drawBackground(); drawMarkers(); drawBoxes(); drawPlayer(); drawParticles(); drawUI();
+    drawBackground(); drawMarkers(); drawBoxes(); drawPlayer(); drawParticles(); drawUI(); drawHearts();
+    
+    // Применяем тряску canvas
+    let canvasX = 0, canvasY = 0;
+    if (shakeAmount > 0) {
+        canvasX = (Math.random() - 0.5) * shakeAmount;
+        canvasY = (Math.random() - 0.5) * shakeAmount;
+    }
+    canvas.style.transform = `translate(${canvasX}px, ${canvasY}px)`;
+    
     animationFrameId = requestAnimationFrame(gameLoop);
 }
 
@@ -791,7 +972,19 @@ function drawBackground() { if (images.bg && images.bg.complete) ctx.drawImage(i
 function drawMarkers() { if (!markersVisible) return; for (let m of markers) { ctx.fillStyle='rgba(255,0,0,0.25)'; ctx.fillRect(m.x,0,BOX_SIZE,H); ctx.strokeStyle='rgba(255,0,0,0.8)'; ctx.strokeRect(m.x,0,BOX_SIZE,H); } }
 function drawBoxes() { for (let box of boxes) { if (!box.active) continue; if (images.box && images.box.complete) ctx.drawImage(images.box, box.x-BOX_SIZE/2, box.y-BOX_SIZE/2, BOX_SIZE, BOX_SIZE); else { ctx.fillStyle=box.tint||'#ccaa66'; ctx.fillRect(box.x-BOX_SIZE/2,box.y-BOX_SIZE/2,BOX_SIZE,BOX_SIZE); ctx.strokeStyle='#886633'; ctx.strokeRect(box.x-BOX_SIZE/2,box.y-BOX_SIZE/2,BOX_SIZE,BOX_SIZE); } if (box.tint && box.tint!=='#ccaa66') { ctx.globalAlpha=0.6; ctx.fillStyle=box.tint; ctx.fillRect(box.x-BOX_SIZE/2,box.y-BOX_SIZE/2,BOX_SIZE,BOX_SIZE); ctx.globalAlpha=1; } } }
 function drawPlayer() { let frame='run1'; if (grounded && (leftPressed||rightPressed)) frame=`run${Math.floor(Date.now()/100)%4+1}`; const img=images[frame]; if (img && img.complete) { const w=img.width*0.24, h=img.height*0.24; ctx.save(); if (lastDir==='left') { ctx.translate(playerX,playerY); ctx.scale(-1,1); ctx.drawImage(img,-w/2,-h/2,w,h); } else ctx.drawImage(img,playerX-w/2,playerY-h/2,w,h); ctx.restore(); } else { ctx.fillStyle='#ffaa66'; ctx.beginPath(); ctx.ellipse(playerX, playerY, PLAYER_HALF_WIDTH, PLAYER_HALF_HEIGHT, 0, 0, Math.PI*2); ctx.fill(); } }
-function drawUI() { ctx.font='bold 22px monospace'; ctx.fillStyle='#ffdd88'; ctx.fillText(`ОЧКИ: ${score}`, W-130,30); ctx.font='9px monospace'; ctx.fillStyle='#aaffdd'; ctx.fillText(`Ск:${playerSpeed.toFixed(1)}`, W-130,48); ctx.fillText(`Пад:x${boxFallSpeedMultiplier.toFixed(2)}`, W-130,60); ctx.fillStyle='#ffcc88'; ctx.fillText(`Гор:${horizontalTolerance}`, W-130,72); ctx.fillText(`Верт:${verticalPushTolerance}`, W-130,84); ctx.fillText(`Толк:x${pushSpeedMultiplier.toFixed(1)}`, W-130,96); }
+function drawUI() { 
+    ctx.font='bold 22px monospace'; 
+    ctx.fillStyle='#ffdd88'; 
+    ctx.fillText(`ОЧКИ: ${score}`, W-130,30); 
+    ctx.font='9px monospace'; 
+    ctx.fillStyle='#aaffdd'; 
+    ctx.fillText(`Ск:${playerSpeed.toFixed(1)}`, W-130,48); 
+    ctx.fillText(`Пад:${(BASE_FALL_SPEED_PX_SEC * boxFallSpeedMultiplier).toFixed(0)}px/с`, W-130,60); 
+    ctx.fillStyle='#ffcc88'; 
+    ctx.fillText(`Гор:${horizontalTolerance}`, W-130,72); 
+    ctx.fillText(`Верт:${verticalPushTolerance}`, W-130,84); 
+    ctx.fillText(`Толк:x${pushSpeedMultiplier.toFixed(1)}`, W-130,96); 
+}
 
 function initGame() {
     playerGroundY = SAVED_PLAYER_GROUND_Y; boxGroundY = SAVED_BOX_GROUND_Y; standOnBoxOffset = SAVED_STAND_OFFSET;
@@ -799,6 +992,9 @@ function initGame() {
     horizontalTolerance = SAVED_HORIZONTAL_TOLERANCE;
     verticalPushTolerance = SAVED_VERTICAL_PUSH_TOLERANCE;
     pushSpeedMultiplier = SAVED_PUSH_SPEED_MULTIPLIER;
+    lives = 3;
+    damageCooldown = 0;
+    shakeAmount = 0;
     document.getElementById('playerGroundValue').innerText = playerGroundY;
     document.getElementById('boxGroundValue').innerText = boxGroundY;
     document.getElementById('standOffsetValue').innerText = standOnBoxOffset;
@@ -820,8 +1016,9 @@ function initGame() {
     document.getElementById('ui').style.display = 'flex';
     document.getElementById('touchPanel').style.display = 'flex';
     if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    lastTimestamp = 0;
     animationFrameId = requestAnimationFrame(gameLoop);
-    showToast(`🎮 Толкание передней частью | Скор.толк.=${pushSpeedMultiplier.toFixed(1)}`);
+    showToast(`🎮 Жизни: ${lives} | Удар головой сбивает ящик!`);
 }
 
 function setupControls() {
@@ -862,7 +1059,16 @@ function setupControls() {
     const speedBtns = {1:'btnSpeed1',2:'btnSpeed2',4:'btnSpeed4',8:'btnSpeed8'};
     for(let [spd,id] of Object.entries(speedBtns)) { document.getElementById(id).onclick = () => { spawnSpeedMultiplier = Number(spd); document.querySelectorAll('.speed-panel .active').forEach(btn=>btn.classList.remove('active')); document.getElementById(id).classList.add('active'); if(spawnInterval){ clearInterval(spawnInterval); spawnInterval = setInterval(()=>spawnBox(), BASE_SPAWN_DELAY / spawnSpeedMultiplier); } showToast(`⚡ Скорость спавна x${spawnSpeedMultiplier}`); }; }
 }
-window.onload = () => { canvas = document.getElementById('gameCanvas'); ctx = canvas.getContext('2d'); initMarkers(); setupControls(); drawBackground(); loadAssets(()=>{}); document.getElementById('startBtn').onclick = () => initGame(); };
+
+window.onload = () => { 
+    canvas = document.getElementById('gameCanvas'); 
+    ctx = canvas.getContext('2d'); 
+    initMarkers(); 
+    setupControls(); 
+    drawBackground(); 
+    loadAssets(()=>{}); 
+    document.getElementById('startBtn').onclick = () => initGame(); 
+};
 </script>
 </body>
 </html>
