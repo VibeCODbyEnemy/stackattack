@@ -55,12 +55,12 @@
     <div class="speed-panel">
         <span>🏃 СКОРОСТЬ</span>
         <button id="btnPlayerSpeedDown" style="background:#aa4444;">-</button>
-        <span id="playerSpeedValue" style="min-width:35px;">4.0</span>
+        <span id="playerSpeedValue" style="min-width:35px;">1.5</span>
         <button id="btnPlayerSpeedUp" style="background:#44aa44;">+</button>
         <div class="separator"></div>
         <span>📦 ПАДЕНИЕ</span>
         <button id="btnBoxFallSpeedDown" style="background:#aa4444;">-</button>
-        <span id="boxFallSpeedValue" style="min-width:35px;">1.0</span>
+        <span id="boxFallSpeedValue" style="min-width:35px;">0.4</span>
         <button id="btnBoxFallSpeedUp" style="background:#44aa44;">+</button>
         <div class="separator"></div>
         <span>⚡ СПАВН</span>
@@ -74,16 +74,16 @@
     <div class="capture-panel horiz-panel">
         <span>↔️ ГОРИЗ. ЗОНА (Z)</span>
         <button id="btnHorizCaptureDown" style="background:#aa4444;">−</button>
-        <span id="horizCaptureValue" class="capture-value">12</span>
+        <span id="horizCaptureValue" class="capture-value">6</span>
         <button id="btnHorizCaptureUp" style="background:#44aa44;">+</button>
         <span style="font-size:9px;">пикс. от центра</span>
     </div>
     
-    <!-- НОВАЯ НАСТРОЙКА: ВЕРТИКАЛЬНЫЙ ДОПУСК ДЛЯ ТОЛКАНИЯ (от центра персонажа) -->
+    <!-- НАСТРОЙКА ВЕРТИКАЛЬНОГО ДОПУСКА (центр персонажа — центр ящика) -->
     <div class="capture-panel vert-panel">
         <span>🔼 ВЕРТ. ДОПУСК (центр)</span>
         <button id="btnVertPushDown" style="background:#aa4444;">−</button>
-        <span id="vertPushValue" class="capture-value">20</span>
+        <span id="vertPushValue" class="capture-value">10</span>
         <button id="btnVertPushUp" style="background:#44aa44;">+</button>
         <span style="font-size:9px;">пикс. от центра</span>
     </div>
@@ -118,22 +118,22 @@
     <div class="move-group"><button id="btnLeft">◀</button><button id="btnRight">▶</button></div>
     <div class="action-group"><button id="btnJump">▲</button></div>
 </div>
-<div class="info" id="infoPanel">⚙️ Толкание передней частью (грудью/руками): Z + ←/→ | Гориз. зона и верт. допуск от центра</div>
+<div class="info" id="infoPanel">⚙️ Толкание передней частью (грудью/руками): Z + ←/→ | Гориз. зона 6px, верт. допуск 10px</div>
 <div class="title-screen" id="titleScreen">
     <h1>📦 СКЛАДСКОЙ ГРУЗЧИК</h1>
     <button id="startBtn">▶ НАЧАТЬ ИГРУ ◀</button>
 </div>
 
 <script>
-// ===== СОХРАНЁННЫЕ НАСТРОЙКИ =====
+// ===== ПОЛНАЯ КОНФИГУРАЦИЯ (обновлена пользователем) =====
 const SAVED_PLAYER_GROUND_Y = 360;
 const SAVED_BOX_GROUND_Y = 370;
 const SAVED_STAND_OFFSET = 12;
-const SAVED_PLAYER_SPEED = 4.0;
-const SAVED_BOX_FALL_SPEED = 1.0;
-const SAVED_HORIZONTAL_TOLERANCE = 12;   // горизонтальная зона захвата (пикс. от передней точки)
-const SAVED_VERTICAL_PUSH_TOLERANCE = 20;  // вертикальный допуск от центра персонажа для толкания (пикс.)
-// ==================================
+const SAVED_PLAYER_SPEED = 1.5;
+const SAVED_BOX_FALL_SPEED = 0.4;
+const SAVED_HORIZONTAL_TOLERANCE = 6;
+const SAVED_VERTICAL_PUSH_TOLERANCE = 10;
+// ========================================================
 
 const W = 800, H = 400;
 const BOX_SIZE = 38;
@@ -162,7 +162,7 @@ let playerSpeed = SAVED_PLAYER_SPEED;
 let boxFallSpeedMultiplier = SAVED_BOX_FALL_SPEED;
 let spawnSpeedMultiplier = 1;
 
-// НАСТРОЙКИ ЗАХВАТА
+// НАСТРОЙКИ ЗАХВАТА (толкание передней частью)
 let horizontalTolerance = SAVED_HORIZONTAL_TOLERANCE;   // горизонтальная зона (пикс. от передней точки)
 let verticalPushTolerance = SAVED_VERTICAL_PUSH_TOLERANCE; // вертикальный допуск от центра персонажа
 
@@ -211,7 +211,6 @@ function showToast(msg, isSuccess = true) {
 
 function getBoxBaseY() { return boxGroundY - BOX_SIZE/2; }
 
-// Регулировка высот
 function updatePlayerGround(newY) {
     let clamped = Math.min(395, Math.max(280, newY));
     if (playerGroundY === clamped) return;
@@ -254,7 +253,6 @@ function updateStandOffset(delta) {
     document.getElementById('standOffsetValue').innerText = standOnBoxOffset;
 }
 
-// Регулировка горизонтальной зоны
 function setHorizontalTolerance(val) {
     let newVal = Math.min(35, Math.max(2, val));
     if (horizontalTolerance === newVal) return;
@@ -265,7 +263,6 @@ function setHorizontalTolerance(val) {
 function horizCaptureUp() { if (gameRunning && !gamePaused) setHorizontalTolerance(horizontalTolerance + 1); }
 function horizCaptureDown() { if (gameRunning && !gamePaused) setHorizontalTolerance(horizontalTolerance - 1); }
 
-// Регулировка вертикального допуска для толкания (от центра персонажа)
 function setVerticalPushTolerance(val) {
     let newVal = Math.min(45, Math.max(5, val));
     if (verticalPushTolerance === newVal) return;
@@ -284,24 +281,24 @@ function standOffsetUp() { if (gameRunning && !gamePaused) updateStandOffset(2);
 function standOffsetDown() { if (gameRunning && !gamePaused) updateStandOffset(-2); }
 
 function setPlayerSpeed(newSpeed) {
-    newSpeed = Math.min(12, Math.max(1.5, newSpeed));
+    newSpeed = Math.min(12, Math.max(1.0, newSpeed));
     if (playerSpeed === newSpeed) return;
     playerSpeed = newSpeed;
     document.getElementById('playerSpeedValue').innerText = playerSpeed.toFixed(1);
     showToast(`🏃 Скорость: ${playerSpeed.toFixed(1)}`, true);
 }
-function playerSpeedUp() { if (gameRunning && !gamePaused) setPlayerSpeed(playerSpeed + 0.5); }
-function playerSpeedDown() { if (gameRunning && !gamePaused) setPlayerSpeed(playerSpeed - 0.5); }
+function playerSpeedUp() { if (gameRunning && !gamePaused) setPlayerSpeed(playerSpeed + 0.2); }
+function playerSpeedDown() { if (gameRunning && !gamePaused) setPlayerSpeed(playerSpeed - 0.2); }
 
 function setBoxFallSpeed(mult) {
-    mult = Math.min(3.0, Math.max(0.4, mult));
+    mult = Math.min(3.0, Math.max(0.3, mult));
     if (boxFallSpeedMultiplier === mult) return;
     boxFallSpeedMultiplier = mult;
     document.getElementById('boxFallSpeedValue').innerText = boxFallSpeedMultiplier.toFixed(2);
     showToast(`📦 Падение ящиков: x${boxFallSpeedMultiplier.toFixed(2)}`, true);
 }
-function boxFallSpeedUp() { if (gameRunning && !gamePaused) setBoxFallSpeed(boxFallSpeedMultiplier + 0.1); }
-function boxFallSpeedDown() { if (gameRunning && !gamePaused) setBoxFallSpeed(boxFallSpeedMultiplier - 0.1); }
+function boxFallSpeedUp() { if (gameRunning && !gamePaused) setBoxFallSpeed(boxFallSpeedMultiplier + 0.05); }
+function boxFallSpeedDown() { if (gameRunning && !gamePaused) setBoxFallSpeed(boxFallSpeedMultiplier - 0.05); }
 
 function applyGravityToBox(box, onComplete) {
     let targetY = box.y;
@@ -390,8 +387,8 @@ const SAVED_VERTICAL_PUSH_TOLERANCE = ${verticalPushTolerance};
 
 function saveToCode() {
     const configCode = `// ===== НАСТРОЙКИ ТОЛКАНИЯ =====
-const SAVED_HORIZONTAL_TOLERANCE = ${horizontalTolerance};   // гориз. зона (пикс.)
-const SAVED_VERTICAL_PUSH_TOLERANCE = ${verticalPushTolerance}; // верт. допуск от центра
+const SAVED_HORIZONTAL_TOLERANCE = ${horizontalTolerance};
+const SAVED_VERTICAL_PUSH_TOLERANCE = ${verticalPushTolerance};
 // ===========================================`;
     navigator.clipboard.writeText(configCode).then(() => {
         showToast(`📋 Настройки толкания скопированы`, true);
@@ -455,34 +452,30 @@ function isBoxMovableHorizontally(box) {
     return true;
 }
 
-// НОВАЯ ЛОГИКА: определяем ящик перед персонажем (толкание передней частью, а не ногами)
+// ОПРЕДЕЛЕНИЕ ЯЩИКА ПЕРЕД ПЕРСОНАЖЕМ (толкание передней частью, по центру)
 function getBoxInFront(dir) {
     if (dir === 0) return null;
     const playerFrontX = playerX + (dir === 1 ? PLAYER_HALF_WIDTH : -PLAYER_HALF_WIDTH);
-    const playerCenterY = playerY + PLAYER_HEIGHT / 2;   // центр туловища
+    const playerCenterY = playerY + PLAYER_HEIGHT / 2;
     let bestBox = null;
     let bestDistance = Infinity;
     for (let box of boxes) {
-        const boxCenterY = box.y;  // центр ящика по вертикали
+        const boxCenterY = box.y;
         const boxLeft = box.x - BOX_SIZE/2;
         const boxRight = box.x + BOX_SIZE/2;
         
-        // ГОРИЗОНТАЛЬНАЯ проверка: передняя точка персонажа должна быть в пределах горизонтальной зоны относительно ящика
         let horizontalMatch = false;
         if (dir === 1) {
-            // справа
             if (playerFrontX <= boxRight + horizontalTolerance && playerFrontX >= boxLeft - horizontalTolerance/2) {
                 horizontalMatch = true;
             }
         } else {
-            // слева
             if (playerFrontX >= boxLeft - horizontalTolerance && playerFrontX <= boxRight + horizontalTolerance/2) {
                 horizontalMatch = true;
             }
         }
         if (!horizontalMatch) continue;
         
-        // ВЕРТИКАЛЬНАЯ проверка: центр ящика должен быть в пределах вертикального допуска от центра персонажа
         const verticalGap = Math.abs(playerCenterY - boxCenterY);
         if (verticalGap > verticalPushTolerance) continue;
         
@@ -497,7 +490,6 @@ function getBoxInFront(dir) {
 
 function tryPushBox(box, direction, force = false) {
     if (pushCooldown || exploding) return false;
-    // Проверка вертикального позиционирования теперь внутри getBoxInFront, но дополнительная проверка на всякий случай
     if (!force) {
         const playerCenterY = playerY + PLAYER_HEIGHT / 2;
         const boxCenterY = box.y;
@@ -685,7 +677,6 @@ function gameLoop() {
     if (moveLeft && !moveRight) { playerX -= playerSpeed * spawnSpeedMultiplier; lastDir = 'left'; }
     else if (moveRight && !moveLeft) { playerX += playerSpeed * spawnSpeedMultiplier; lastDir = 'right'; }
     
-    // Толкание с зажатой Z: только при активном движении влево/вправо
     if (forcePushActive) {
         if (moveLeft) forcePushDirection = -1;
         else if (moveRight) forcePushDirection = 1;
