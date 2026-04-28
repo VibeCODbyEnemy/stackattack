@@ -3,39 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Складской грузчик — сохранённые настройки высот</title>
+    <title>Складской грузчик — полная конфигурация</title>
     <style>
         * { user-select: none; touch-action: manipulation; }
         body { margin: 0; min-height: 100vh; background: #1a2a32; display: flex; justify-content: center; align-items: center; font-family: monospace; }
         .game-container { position: relative; }
         canvas { display: block; margin: 0 auto; box-shadow: 0 0 20px rgba(0,0,0,0.3); cursor: pointer; background: #2a4a5a; }
-        .ui { position: fixed; top: 10px; left: 0; right: 0; display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; z-index: 100; pointer-events: none; }
-        .ui button, .score, .speed-buttons, .height-controls { pointer-events: auto; background: rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.4); border-radius: 40px; color: white; font-size: 13px; font-weight: bold; padding: 6px 12px; cursor: pointer; font-family: monospace; backdrop-filter: blur(4px); }
-        .score { background: rgba(0,0,0,0.8); border-radius: 40px; padding: 6px 16px; color: #ffdd88; font-size: 18px; font-weight: bold; border: 1px solid gold; }
-        .speed-buttons { display: inline-flex; gap: 5px; background: rgba(0,0,0,0.5); border-radius: 40px; padding: 4px 8px; }
-        .speed-buttons button { background: #ff8800; border: none; border-radius: 30px; padding: 4px 10px; font-size: 12px; }
-        .speed-buttons .active { background: #00aa44; }
-        .height-controls { display: inline-flex; gap: 5px; background: rgba(0,0,0,0.6); border-radius: 40px; padding: 4px 8px; align-items: center; }
-        .height-controls button { background: #4488ff; border: none; border-radius: 30px; padding: 4px 12px; font-size: 14px; font-weight: bold; cursor: pointer; }
-        .height-controls span { margin: 0 5px; font-size: 11px; color: #aaffdd; }
-        .height-indicator { font-size: 10px; background: #000000aa; border-radius: 20px; padding: 2px 6px; margin-left: 3px; }
+        .ui { position: fixed; top: 10px; left: 0; right: 0; display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; z-index: 100; pointer-events: none; }
+        .ui button, .score, .speed-panel, .height-controls { pointer-events: auto; background: rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.4); border-radius: 40px; color: white; font-size: 12px; font-weight: bold; padding: 5px 10px; cursor: pointer; font-family: monospace; backdrop-filter: blur(4px); }
+        .score { background: rgba(0,0,0,0.8); border-radius: 40px; padding: 5px 14px; color: #ffdd88; font-size: 16px; font-weight: bold; border: 1px solid gold; }
+        .speed-panel { display: inline-flex; gap: 4px; background: rgba(0,0,0,0.6); border-radius: 40px; padding: 4px 8px; align-items: center; flex-wrap: wrap; }
+        .speed-panel span { font-size: 10px; color: #aaffdd; margin: 0 3px; }
+        .speed-panel button { background: #ff8800; border: none; border-radius: 30px; padding: 3px 8px; font-size: 11px; min-width: 32px; }
+        .speed-panel .active { background: #00aa44; }
+        .height-controls { display: inline-flex; gap: 4px; background: rgba(0,0,0,0.6); border-radius: 40px; padding: 4px 8px; align-items: center; }
+        .height-controls button { background: #4488ff; border: none; border-radius: 30px; padding: 3px 10px; font-size: 12px; font-weight: bold; cursor: pointer; }
+        .height-indicator { font-size: 9px; background: #000000aa; border-radius: 20px; padding: 2px 5px; margin-left: 3px; }
         .save-controls { background: #4a2a2a80 !important; }
         .save-controls button { background: #ff8844 !important; }
+        .sync-btn { background: #44aa88 !important; }
+        .save-to-code-btn { background: #ff6644 !important; }
         .touch-panel { position: fixed; bottom: 20px; left: 0; right: 0; display: flex; justify-content: space-between; padding: 0 20px; pointer-events: none; z-index: 100; }
         .move-group, .action-group { display: flex; gap: 20px; background: rgba(0,0,0,0.4); padding: 8px 20px; border-radius: 100px; backdrop-filter: blur(8px); pointer-events: auto; }
         .touch-panel button { background: rgba(30,40,60,0.95); border: 2px solid rgba(255,255,255,0.5); border-radius: 60px; color: white; font-size: 28px; width: 70px; height: 70px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .touch-panel button:active { transform: scale(0.95); background: #4a6a8a; }
         @media (max-width:650px){ .touch-panel button { width: 55px; height: 55px; font-size: 24px; } }
-        .info { position: fixed; bottom: 10px; left: 10px; background: rgba(0,0,0,0.6); padding: 4px 8px; border-radius: 8px; color: #0f0; font-size: 10px; pointer-events: none; }
+        .info { position: fixed; bottom: 10px; left: 10px; background: rgba(0,0,0,0.6); padding: 4px 8px; border-radius: 8px; color: #0f0; font-size: 9px; pointer-events: none; }
         .title-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1a2a32; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; }
-        .title-screen h1 { color: white; font-size: 48px; text-shadow: 0 0 10px #ffaa44; margin-bottom: 30px; }
-        .title-screen button { background: #ffaa44; border: none; font-size: 24px; padding: 12px 32px; border-radius: 40px; cursor: pointer; font-weight: bold; font-family: monospace; margin: 10px; }
-        .restart-btn { background: #aa4444 !important; color: white; font-size: 20px; }
-        .stand-offset-btn { background: #aa66ff !important; }
-        .sync-btn { background: #44aa88 !important; }
-        .save-to-code-btn { background: #ff6644 !important; }
-        .toast-msg { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #00aa44dd; color: white; padding: 8px 20px; border-radius: 40px; font-size: 14px; z-index: 2000; backdrop-filter: blur(8px); pointer-events: none; animation: fadeOut 2s forwards; }
+        .title-screen h1 { color: white; font-size: 42px; text-shadow: 0 0 10px #ffaa44; margin-bottom: 20px; text-align: center; }
+        .title-screen button { background: #ffaa44; border: none; font-size: 22px; padding: 10px 28px; border-radius: 40px; cursor: pointer; font-weight: bold; font-family: monospace; margin: 8px; }
+        .toast-msg { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #00aa44dd; color: white; padding: 8px 20px; border-radius: 40px; font-size: 13px; z-index: 2000; backdrop-filter: blur(8px); pointer-events: none; animation: fadeOut 2s forwards; }
         @keyframes fadeOut { 0% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
+        .separator { width: 1px; height: 20px; background: rgba(255,255,255,0.3); margin: 0 4px; }
     </style>
 </head>
 <body>
@@ -47,35 +46,33 @@
     <button id="btnMenu">📜</button>
     <button id="btnRestartGame">🔄 РЕСТАРТ</button>
     <button id="btnToggleMarkers">🔴 ЗОНЫ</button>
-    <button id="btnGodMode">🛡️</button>
-    <div class="speed-buttons">
+    
+    <div class="speed-panel">
+        <span>🏃 СКОРОСТЬ</span>
+        <button id="btnPlayerSpeedDown" style="background:#aa4444;">-</button>
+        <span id="playerSpeedValue" style="min-width:32px;">1.5</span>
+        <button id="btnPlayerSpeedUp" style="background:#44aa44;">+</button>
+        <div class="separator"></div>
+        <span>📦 ПАДЕНИЕ</span>
+        <button id="btnBoxFallSpeedDown" style="background:#aa4444;">-</button>
+        <span id="boxFallSpeedValue" style="min-width:38px;">0.40</span>
+        <button id="btnBoxFallSpeedUp" style="background:#44aa44;">+</button>
+        <div class="separator"></div>
+        <span>⚡ СПАВН</span>
         <button id="btnSpeed1" class="active">x1</button>
         <button id="btnSpeed2">x2</button>
         <button id="btnSpeed4">x4</button>
         <button id="btnSpeed8">x8</button>
     </div>
-    <div class="height-controls" style="background: #2a3a2a80;">
-        <span>👤 ПОЛ</span>
-        <button id="btnPlayerGroundUp">▲</button>
-        <button id="btnPlayerGroundDown">▼</button>
-        <span id="playerGroundValue" class="height-indicator">360</span>
-    </div>
-    <div class="height-controls" style="background: #3a2a3a80;">
-        <span>📦 ЯЩИКИ</span>
-        <button id="btnBoxGroundUp">▲</button>
-        <button id="btnBoxGroundDown">▼</button>
-        <span id="boxGroundValue" class="height-indicator">370</span>
-    </div>
-    <div class="height-controls" style="background: #2a2a4a80;">
-        <span>📐 НА ЯЩИКЕ</span>
-        <button id="btnStandOffsetUp" class="stand-offset-btn">▲</button>
-        <button id="btnStandOffsetDown" class="stand-offset-btn">▼</button>
-        <span id="standOffsetValue" class="height-indicator">12</span>
-    </div>
+    
+    <div class="height-controls"><span>👤 ПОЛ</span><button id="btnPlayerGroundUp">▲</button><button id="btnPlayerGroundDown">▼</button><span id="playerGroundValue" class="height-indicator">360</span></div>
+    <div class="height-controls"><span>📦 ЯЩИКИ</span><button id="btnBoxGroundUp">▲</button><button id="btnBoxGroundDown">▼</button><span id="boxGroundValue" class="height-indicator">370</span></div>
+    <div class="height-controls"><span>📐 НА ЯЩИКЕ</span><button id="btnStandOffsetUp">▲</button><button id="btnStandOffsetDown">▼</button><span id="standOffsetValue" class="height-indicator">12</span></div>
     <div class="height-controls save-controls">
         <span>💾 СОХРАНЕНИЕ</span>
         <button id="btnSyncHeights" class="sync-btn">🔄 СИНХР</button>
-        <button id="btnSaveToCode" class="save-to-code-btn">💾 СОХР. В КОД</button>
+        <button id="btnSaveToCode" class="save-to-code-btn">💾 В КОД</button>
+        <button id="btnSaveFullConfig" style="background:#ffaa33;">💿 ВСЁ</button>
     </div>
     <div class="score" id="scoreBoard">ОЧКИ: 0</div>
 </div>
@@ -83,48 +80,49 @@
     <div class="move-group"><button id="btnLeft">◀</button><button id="btnRight">▶</button></div>
     <div class="action-group"><button id="btnJump">▲</button></div>
 </div>
-<div class="info" id="infoPanel">📦 СОХРАНЁННЫЕ НАСТРОЙКИ: ПОЛ=360 ЯЩИКИ=370 ВЫСОТА_НА_ЯЩИКЕ=12 | Q/W A/S Z/X</div>
+<div class="info" id="infoPanel">⚙️ ТЕКУЩАЯ КОНФИГ: скорость=1.5 | падение=x0.4</div>
 <div class="title-screen" id="titleScreen">
     <h1>📦 СКЛАДСКОЙ ГРУЗЧИК</h1>
     <button id="startBtn">▶ НАЧАТЬ ИГРУ ◀</button>
 </div>
 
 <script>
-// ===== СОХРАНЁННЫЕ НАСТРОЙКИ ВЫСОТ (вставлены из буфера) =====
-// Эти значения применяются при старте игры и рестарте
+// ===== ПОЛНАЯ КОНФИГУРАЦИЯ ИГРЫ (ВАШИ НАСТРОЙКИ) =====
 const SAVED_PLAYER_GROUND_Y = 360;
 const SAVED_BOX_GROUND_Y = 370;
 const SAVED_STAND_OFFSET = 12;
-// ============================================================
+const SAVED_PLAYER_SPEED = 1.5;
+const SAVED_BOX_FALL_SPEED = 0.4;
+// ===================================================
 
-// ========== КОНСТАНТЫ ==========
 const W = 800, H = 400;
 const BOX_SIZE = 38;
 const MAX_STACK = 8;
 const WIN_LINE = 16;
-const SPAWN_DELAY = 2200;
-const PLAYER_SPEED = 4;
-const JUMP_POWER = -8;
-const GRAVITY = 0.5;
+const BASE_SPAWN_DELAY = 2200;
+const DEFAULT_JUMP_POWER = -8;
+const DEFAULT_GRAVITY = 0.5;
 const DEFAULT_MARKERS = [97,135,173,211,249,287,325,363,401,439,477,515,553,591,629,667];
 
-// Размеры коллайдера персонажа
 const PLAYER_WIDTH = 32;
 const PLAYER_HEIGHT = 52;
 const PLAYER_HALF_WIDTH = PLAYER_WIDTH/2;
 const PLAYER_HALF_HEIGHT = PLAYER_HEIGHT/2;
 
-// ========== ГЛОБАЛЬНЫЕ (инициализация с сохранёнными значениями) ==========
 let canvas, ctx;
 let gameRunning = false;
 let gamePaused = false;
 let score = 0;
-let godMode = false;
 
-// РАЗДЕЛЬНЫЕ ВЫСОТЫ — используем сохранённые значения
+// Высоты (из конфига)
 let playerGroundY = SAVED_PLAYER_GROUND_Y;
 let boxGroundY = SAVED_BOX_GROUND_Y;
 let standOnBoxOffset = SAVED_STAND_OFFSET;
+
+// Скорости (из конфига)
+let playerSpeed = SAVED_PLAYER_SPEED;
+let boxFallSpeedMultiplier = SAVED_BOX_FALL_SPEED;
+let spawnSpeedMultiplier = 1;
 
 let playerX = 200, playerY = playerGroundY - PLAYER_HALF_HEIGHT;
 let playerVy = 0;
@@ -139,29 +137,16 @@ let markers = [];
 let markersVisible = false;
 let leftBound = 0, rightBound = 800;
 
-let currentSpeed = 1;
 let spawnInterval = null;
 let exploding = false;
 let pushCooldown = false;
 let animationFrameId = null;
-
-// Эффекты
 let particles = [];
 
-// Изображения
 let images = {};
 let assetsLoaded = false;
-const imageList = {
-    bg: 'bg.png',
-    run1: 'run1.png',
-    run2: 'run2.png',
-    run3: 'run3.png',
-    run4: 'run4.png',
-    box: 'box.png',
-    title: 'title.png'
-};
+const imageList = { bg: 'bg.png', run1: 'run1.png', run2: 'run2.png', run3: 'run3.png', run4: 'run4.png', box: 'box.png' };
 
-// ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
 function showToast(msg, isSuccess = true) {
     const toast = document.createElement('div');
     toast.className = 'toast-msg';
@@ -171,17 +156,14 @@ function showToast(msg, isSuccess = true) {
     setTimeout(() => toast.remove(), 2000);
 }
 
-function getBoxBaseY() {
-    return boxGroundY - BOX_SIZE/2;
-}
+function getBoxBaseY() { return boxGroundY - BOX_SIZE/2; }
+function getStackKey(x) { return Math.round(x / BOX_SIZE) * BOX_SIZE; }
 
-// Регулировка пола игрока
 function updatePlayerGround(newY) {
     let clamped = Math.min(395, Math.max(280, newY));
     if (playerGroundY === clamped) return;
     const deltaY = clamped - playerGroundY;
     playerGroundY = clamped;
-    
     playerY += deltaY;
     if (playerY + PLAYER_HALF_HEIGHT >= playerGroundY) {
         playerY = playerGroundY - PLAYER_HALF_HEIGHT;
@@ -189,16 +171,12 @@ function updatePlayerGround(newY) {
         grounded = true;
     }
     document.getElementById('playerGroundValue').innerText = Math.round(playerGroundY);
-    canvas.style.transform = `translate(0, ${deltaY > 0 ? '1px' : '-1px'})`;
-    setTimeout(() => { canvas.style.transform = ''; }, 100);
 }
 
-// Регулировка земли для ящиков
 function updateBoxGround(newY) {
     let clamped = Math.min(395, Math.max(280, newY));
     if (boxGroundY === clamped) return;
     boxGroundY = clamped;
-    
     const allBoxes = [...boxes];
     stacks.clear();
     for (let box of allBoxes) {
@@ -208,164 +186,71 @@ function updateBoxGround(newY) {
     }
     for (let [key, stack] of stacks.entries()) {
         stack.sort((a,b) => a.y - b.y);
-        for (let i = 0; i < stack.length; i++) {
-            stack[i].y = getBoxBaseY() - i * BOX_SIZE;
-        }
+        for (let i = 0; i < stack.length; i++) stack[i].y = getBoxBaseY() - i * BOX_SIZE;
     }
     document.getElementById('boxGroundValue').innerText = Math.round(boxGroundY);
-    canvas.style.transform = `translate(0, ${clamped > boxGroundY ? '2px' : '-2px'})`;
-    setTimeout(() => { canvas.style.transform = ''; }, 100);
 }
 
-// Регулировка высоты стояния на ящике
 function updateStandOffset(delta) {
     let newOffset = standOnBoxOffset + delta;
     newOffset = Math.min(30, Math.max(-30, newOffset));
     if (standOnBoxOffset === newOffset) return;
     standOnBoxOffset = newOffset;
     document.getElementById('standOffsetValue').innerText = standOnBoxOffset;
-    canvas.style.transform = `scale(1.01)`;
-    setTimeout(() => { canvas.style.transform = ''; }, 100);
 }
 
-function playerGroundUp() { if (gameRunning && !gamePaused) updatePlayerGround(playerGroundY - 5); }
-function playerGroundDown() { if (gameRunning && !gamePaused) updatePlayerGround(playerGroundY + 5); }
-function boxGroundUp() { if (gameRunning && !gamePaused) updateBoxGround(boxGroundY - 5); }
-function boxGroundDown() { if (gameRunning && !gamePaused) updateBoxGround(boxGroundY + 5); }
-function standOffsetUp() { if (gameRunning && !gamePaused) updateStandOffset(2); }
-function standOffsetDown() { if (gameRunning && !gamePaused) updateStandOffset(-2); }
-
-// ========== СИНХРОНИЗАЦИЯ ВСЕХ ВЫСОТ ==========
-function syncAllHeights() {
-    if (!gameRunning) return;
-    
-    const allBoxes = [...boxes];
-    stacks.clear();
-    for (let box of allBoxes) {
-        const key = getStackKey(box.x);
-        if (!stacks.has(key)) stacks.set(key, []);
-        stacks.get(key).push(box);
-    }
-    for (let [key, stack] of stacks.entries()) {
-        stack.sort((a,b) => a.y - b.y);
-        for (let i = 0; i < stack.length; i++) {
-            stack[i].y = getBoxBaseY() - i * BOX_SIZE;
-        }
-    }
-    
-    let standingOnBox = false;
-    const feetY = playerY + PLAYER_HALF_HEIGHT;
-    for (let box of boxes) {
-        const boxTop = box.y - BOX_SIZE/2;
-        const boxLeft = box.x - BOX_SIZE/2;
-        const boxRight = box.x + BOX_SIZE/2;
-        if (playerX + PLAYER_HALF_WIDTH > boxLeft && playerX - PLAYER_HALF_WIDTH < boxRight) {
-            if (Math.abs(feetY - boxTop) < 15) {
-                playerY = boxTop - standOnBoxOffset - PLAYER_HALF_HEIGHT;
-                playerVy = 0;
-                grounded = true;
-                standingOnBox = true;
-                break;
-            }
-        }
-    }
-    
-    if (!standingOnBox) {
-        if (playerY + PLAYER_HALF_HEIGHT > playerGroundY) {
-            playerY = playerGroundY - PLAYER_HALF_HEIGHT;
-            playerVy = 0;
-            grounded = true;
-        }
-    }
-    
-    document.getElementById('playerGroundValue').innerText = Math.round(playerGroundY);
-    document.getElementById('boxGroundValue').innerText = Math.round(boxGroundY);
-    document.getElementById('standOffsetValue').innerText = standOnBoxOffset;
-    
-    showToast(`✅ Синхронизировано: ПОЛ=${playerGroundY} ЯЩ=${boxGroundY} СМЕЩ=${standOnBoxOffset}`);
+function setPlayerSpeed(newSpeed) {
+    newSpeed = Math.min(12, Math.max(1.0, newSpeed));
+    if (playerSpeed === newSpeed) return;
+    playerSpeed = newSpeed;
+    document.getElementById('playerSpeedValue').innerText = playerSpeed.toFixed(1);
+    showToast(`🏃 Скорость персонажа: ${playerSpeed.toFixed(1)}`, true);
 }
 
-// ========== СОХРАНЕНИЕ В КОД ==========
-function saveToCode() {
-    const configCode = `// ===== СОХРАНЁННЫЕ НАСТРОЙКИ ВЫСОТ =====
-const SAVED_PLAYER_GROUND_Y = ${playerGroundY};
-const SAVED_BOX_GROUND_Y = ${boxGroundY};
-const SAVED_STAND_OFFSET = ${standOnBoxOffset};
-// =============================================`;
-
-    navigator.clipboard.writeText(configCode).then(() => {
-        showToast(`📋 Настройки скопированы! ПОЛ=${playerGroundY} ЯЩ=${boxGroundY} СМЕЩ=${standOnBoxOffset}`, true);
-        console.log(configCode);
-    }).catch(() => {
-        alert(`Скопируйте настройки вручную:\n${configCode}`);
-        showToast(`⚠️ Настройки в консоли (F12)`, false);
-    });
+function setBoxFallSpeed(mult) {
+    mult = Math.min(3.0, Math.max(0.3, mult));
+    if (boxFallSpeedMultiplier === mult) return;
+    boxFallSpeedMultiplier = mult;
+    document.getElementById('boxFallSpeedValue').innerText = boxFallSpeedMultiplier.toFixed(2);
+    showToast(`📦 Скорость падения: x${boxFallSpeedMultiplier.toFixed(2)}`, true);
 }
 
-// ========== ЗАГРУЗКА ИЗОБРАЖЕНИЙ ==========
-function loadAssets(callback) {
-    let loaded = 0;
-    const total = Object.keys(imageList).length;
-    for (let [key, src] of Object.entries(imageList)) {
-        const img = new Image();
-        img.onload = () => { loaded++; if (loaded===total) { assetsLoaded=true; callback(); } };
-        img.onerror = () => { console.warn(`Не загружено ${src}`); loaded++; if (loaded===total) { assetsLoaded=true; callback(); } };
-        img.src = src;
-        images[key] = img;
-    }
-}
-
-function getStackKey(x) { return Math.round(x / BOX_SIZE) * BOX_SIZE; }
-
-function addToStack(box) {
-    const key = getStackKey(box.x);
-    if (!stacks.has(key)) stacks.set(key, []);
-    const stack = stacks.get(key);
-    if (!stack.includes(box)) stack.push(box);
-    stack.sort((a,b) => a.y - b.y);
-    for (let i=0; i<stack.length; i++) stack[i].y = getBoxBaseY() - i*BOX_SIZE;
-}
-
-function removeFromStack(box) {
-    const key = getStackKey(box.x);
-    if (stacks.has(key)) {
-        const stack = stacks.get(key);
-        const idx = stack.indexOf(box);
-        if (idx !== -1) stack.splice(idx,1);
-        if (stack.length===0) stacks.delete(key);
-        else for (let i=0; i<stack.length; i++) stack[i].y = getBoxBaseY() - i*BOX_SIZE;
-    }
-}
-
-function getBoxBelow(x, y) {
-    for (let box of boxes) {
-        if (Math.abs(box.x - x) < BOX_SIZE-2) {
-            const boxTop = box.y - BOX_SIZE/2;
-            if (Math.abs(boxTop - (y + PLAYER_HEIGHT)) < 10) return box;
-        }
-    }
-    return null;
-}
+function playerSpeedUp() { if (gameRunning && !gamePaused) setPlayerSpeed(playerSpeed + 0.3); }
+function playerSpeedDown() { if (gameRunning && !gamePaused) setPlayerSpeed(playerSpeed - 0.3); }
+function boxFallSpeedUp() { if (gameRunning && !gamePaused) setBoxFallSpeed(boxFallSpeedMultiplier + 0.05); }
+function boxFallSpeedDown() { if (gameRunning && !gamePaused) setBoxFallSpeed(boxFallSpeedMultiplier - 0.05); }
 
 function applyGravityToBox(box, onComplete) {
     let targetY = box.y;
-    let below = getBoxBelow(box.x, box.y);
+    let below = null;
+    for (let other of boxes) {
+        if (other !== box && Math.abs(other.x - box.x) < BOX_SIZE-2) {
+            const otherTop = other.y - BOX_SIZE/2;
+            if (Math.abs(otherTop - (box.y + BOX_SIZE/2)) < 12) { below = other; break; }
+        }
+    }
     if (below) targetY = below.y - BOX_SIZE;
     else targetY = getBoxBaseY();
-    if (targetY === box.y) { if (onComplete) onComplete(); return; }
+    if (Math.abs(targetY - box.y) < 1) { if (onComplete) onComplete(); return; }
     const startY = box.y;
-    const duration = Math.min(300, Math.abs(targetY-startY)*2);
+    const distance = Math.abs(targetY - startY);
+    const baseDuration = Math.min(350, distance * 2.2);
+    const duration = Math.max(40, baseDuration / Math.max(0.3, boxFallSpeedMultiplier));
     const startTime = performance.now();
     function animate(now) {
         const elapsed = now - startTime;
-        let t = Math.min(1, elapsed/duration);
-        t = Math.sin(t*Math.PI/2);
-        box.y = startY + (targetY-startY)*t;
-        if (t<1) requestAnimationFrame(animate);
+        let t = Math.min(1, elapsed / duration);
+        t = Math.sin(t * Math.PI/2);
+        box.y = startY + (targetY - startY) * t;
+        if (t < 1) requestAnimationFrame(animate);
         else {
             box.y = targetY;
-            removeFromStack(box);
-            addToStack(box);
+            const key = getStackKey(box.x);
+            if (!stacks.has(key)) stacks.set(key, []);
+            const stack = stacks.get(key);
+            if (!stack.includes(box)) stack.push(box);
+            stack.sort((a,b) => a.y - b.y);
+            for (let i=0; i<stack.length; i++) stack[i].y = getBoxBaseY() - i*BOX_SIZE;
             if (onComplete) onComplete();
             checkHorizontalLines();
         }
@@ -373,21 +258,37 @@ function applyGravityToBox(box, onComplete) {
     requestAnimationFrame(animate);
 }
 
+function isBoxMovableHorizontally(box) {
+    const boxLeft = box.x - BOX_SIZE/2, boxRight = box.x + BOX_SIZE/2;
+    for (let other of boxes) {
+        if (other === box) continue;
+        if (Math.abs(other.y - box.y) < BOX_SIZE/2) {
+            const otherLeft = other.x - BOX_SIZE/2, otherRight = other.x + BOX_SIZE/2;
+            if ((boxRight > otherLeft - 2) && (boxLeft < otherRight + 2)) return false;
+        }
+    }
+    return true;
+}
+
 function tryPushBox(box, direction) {
     if (pushCooldown || exploding) return false;
     const playerBottom = playerY + PLAYER_HEIGHT;
     const boxTop = box.y - BOX_SIZE/2;
     if (Math.abs(playerBottom - boxTop) > 8) return false;
+    if (!isBoxMovableHorizontally(box)) {
+        box.tint = '#ff8888';
+        setTimeout(() => { if (box.active) box.tint = null; }, 120);
+        return false;
+    }
     const newX = box.x + direction * BOX_SIZE;
-    if (newX < leftBound+BOX_SIZE/2 || newX > rightBound-BOX_SIZE/2) return false;
+    if (newX < leftBound + BOX_SIZE/2 || newX > rightBound - BOX_SIZE/2) return false;
     for (let other of boxes) {
-        if (other===box) continue;
-        if (Math.abs(other.x - newX) < BOX_SIZE-2 && Math.abs(other.y - box.y) < BOX_SIZE/2) return false;
+        if (other !== box && Math.abs(other.x - newX) < BOX_SIZE-2 && Math.abs(other.y - box.y) < BOX_SIZE/2) return false;
     }
     pushCooldown = true;
-    removeFromStack(box);
+    const key = getStackKey(box.x);
+    if (stacks.has(key)) { const arr = stacks.get(key); const idx = arr.indexOf(box); if(idx!==-1) arr.splice(idx,1); if(arr.length===0) stacks.delete(key); }
     box.x = newX;
-    addToStack(box);
     applyGravityToBox(box, () => { pushCooldown = false; });
     box.tint = '#aaffcc';
     setTimeout(() => { if (box.active) box.tint = null; }, 150);
@@ -402,9 +303,7 @@ function checkHorizontalLines() {
     const rows = new Map();
     for (let b of allBoxes) {
         let found = false;
-        for (let [y,list] of rows) {
-            if (Math.abs(b.y - y) <= 5) { list.push(b); found=true; break; }
-        }
+        for (let [y,list] of rows) if (Math.abs(b.y - y) <= 5) { list.push(b); found=true; break; }
         if (!found) rows.set(b.y, [b]);
     }
     const toExplode = [];
@@ -426,130 +325,24 @@ function checkHorizontalLines() {
         destroyed += row.length;
         for (let b of row) {
             if (b.active) {
-                addExplosion(b.x, b.y);
+                for(let i=0;i<12;i++) particles.push({ x:b.x, y:b.y, vx:(Math.random()-0.5)*6, vy:(Math.random()-0.5)*6-2, life:0.7, size:3+Math.random()*4, color:`hsl(${30+Math.random()*30},80%,60%)` });
                 const idx = boxes.indexOf(b);
                 if (idx!==-1) boxes.splice(idx,1);
-                removeFromStack(b);
+                const key = getStackKey(b.x);
+                if(stacks.has(key)) { const arr = stacks.get(key); const i2 = arr.indexOf(b); if(i2!==-1) arr.splice(i2,1); if(arr.length===0) stacks.delete(key); }
             }
         }
     }
     score += destroyed*50;
     document.getElementById('scoreBoard').innerHTML = `ОЧКИ: ${score}`;
-    canvas.style.transform = `translate(${Math.sin(Date.now()*0.05)*3}px, ${Math.cos(Date.now()*0.07)*2}px)`;
-    setTimeout(() => { canvas.style.transform = ''; exploding = false; }, 500);
+    setTimeout(() => { exploding = false; }, 400);
     return true;
 }
 
-// ========== ЭФФЕКТЫ ==========
-function addExplosion(x,y) {
-    for (let i=0;i<20;i++) {
-        const angle = Math.random()*Math.PI*2;
-        const speed = 2+Math.random()*5;
-        particles.push({
-            x,y, vx:Math.cos(angle)*speed, vy:Math.sin(angle)*speed-2,
-            life:0.8+Math.random()*0.5, size:3+Math.random()*4,
-            color:`hsl(${30+Math.random()*30},80%,60%)`
-        });
-    }
-    ctx.save();
-    ctx.globalCompositeOperation='lighter';
-    ctx.fillStyle='#ffaa44';
-    ctx.beginPath(); ctx.arc(x,y,15,0,Math.PI*2); ctx.fill();
-    ctx.restore();
-}
-function updateParticles() {
-    for (let i=particles.length-1;i>=0;i--) {
-        let p=particles[i];
-        p.x+=p.vx; p.y+=p.vy; p.vy+=0.2; p.life-=0.02;
-        if (p.life<=0 || p.y>H+50) particles.splice(i,1);
-    }
-}
-function drawParticles() {
-    for (let p of particles) {
-        ctx.fillStyle=p.color;
-        ctx.globalAlpha=Math.min(1,p.life*1.5);
-        ctx.fillRect(p.x-p.size/2,p.y-p.size/2,p.size,p.size);
-    }
-    ctx.globalAlpha=1;
-}
-function drawBackground() {
-    if (images.bg && images.bg.complete) ctx.drawImage(images.bg,0,0,W,H);
-    else { 
-        ctx.fillStyle='#2a4a5a'; ctx.fillRect(0,0,W,H);
-        ctx.fillStyle='#3a6a5a20'; 
-        ctx.fillRect(0, playerGroundY-2, W, 2);
-    }
-}
-function drawMarkers() {
-    if (!markersVisible) return;
-    for (let m of markers) {
-        ctx.fillStyle='rgba(255,0,0,0.25)'; ctx.fillRect(m.x,0,BOX_SIZE,H);
-        ctx.strokeStyle='rgba(255,0,0,0.8)'; ctx.lineWidth=1; ctx.strokeRect(m.x,0,BOX_SIZE,H);
-        ctx.fillStyle='#ff8888'; ctx.font='8px monospace'; ctx.fillText(`${Math.round(m.x)}`, m.x+BOX_SIZE/2-12,20);
-    }
-}
-function drawBoxes() {
-    for (let box of boxes) {
-        if (!box.active) continue;
-        if (images.box && images.box.complete) ctx.drawImage(images.box, box.x-BOX_SIZE/2, box.y-BOX_SIZE/2, BOX_SIZE, BOX_SIZE);
-        else {
-            ctx.fillStyle=box.tint||'#ccaa66'; ctx.fillRect(box.x-BOX_SIZE/2,box.y-BOX_SIZE/2,BOX_SIZE,BOX_SIZE);
-            ctx.strokeStyle='#886633'; ctx.lineWidth=1; ctx.strokeRect(box.x-BOX_SIZE/2,box.y-BOX_SIZE/2,BOX_SIZE,BOX_SIZE);
-        }
-        if (box.tint && box.tint!=='#ccaa66') {
-            ctx.globalAlpha=0.5; ctx.fillStyle=box.tint; ctx.fillRect(box.x-BOX_SIZE/2,box.y-BOX_SIZE/2,BOX_SIZE,BOX_SIZE);
-            ctx.globalAlpha=1;
-        }
-    }
-}
-function drawPlayer() {
-    let frame='run1';
-    if (grounded && (leftPressed||rightPressed)) frame=`run${Math.floor(Date.now()/100)%4+1}`;
-    const img=images[frame];
-    if (img && img.complete) {
-        const w=img.width*0.24, h=img.height*0.24;
-        ctx.save();
-        if (lastDir==='left') { ctx.translate(playerX,playerY); ctx.scale(-1,1); ctx.drawImage(img,-w/2,-h/2,w,h); }
-        else ctx.drawImage(img,playerX-w/2,playerY-h/2,w,h);
-        ctx.restore();
-    } else {
-        ctx.fillStyle='#ffaa66';
-        ctx.beginPath(); ctx.ellipse(playerX, playerY, PLAYER_HALF_WIDTH, PLAYER_HALF_HEIGHT, 0, 0, Math.PI*2);
-        ctx.fill();
-        ctx.fillStyle='#000';
-        ctx.beginPath(); ctx.arc(playerX-PLAYER_HALF_WIDTH*0.6, playerY-PLAYER_HALF_HEIGHT*0.3, 3, 0, Math.PI*2);
-        ctx.fill();
-        ctx.beginPath(); ctx.arc(playerX+PLAYER_HALF_WIDTH*0.6, playerY-PLAYER_HALF_HEIGHT*0.3, 3, 0, Math.PI*2);
-        ctx.fill();
-        ctx.fillStyle=lastDir==='right'?'#ffaa44':'#ff8844';
-        ctx.beginPath(); ctx.moveTo(playerX+(lastDir==='right'?PLAYER_HALF_WIDTH*0.7:-PLAYER_HALF_WIDTH*0.7), playerY);
-        ctx.lineTo(playerX+(lastDir==='right'?PLAYER_HALF_WIDTH*1.2:-PLAYER_HALF_WIDTH*1.2), playerY-5);
-        ctx.lineTo(playerX+(lastDir==='right'?PLAYER_HALF_WIDTH*1.2:-PLAYER_HALF_WIDTH*1.2), playerY+5);
-        ctx.fill();
-    }
-}
-function drawUI() {
-    ctx.font='bold 22px monospace'; ctx.fillStyle='#ffdd88'; ctx.fillText(`ОЧКИ: ${score}`, W-130,30);
-    ctx.font='9px monospace'; ctx.fillStyle='#aaffdd'; 
-    ctx.fillText(`ПОЛ:${Math.round(playerGroundY)}`, W-130,52);
-    ctx.fillText(`ЯЩ:${Math.round(boxGroundY)}`, W-130,64);
-    ctx.fillText(`НА ЯЩ:${standOnBoxOffset>0?'+':''}${standOnBoxOffset}`, W-130,76);
-}
-
-// ========== ИНИЦИАЛИЗАЦИЯ МАРКЕРОВ ==========
-function initMarkers() {
-    markers = DEFAULT_MARKERS.map(x=>({x}));
-    updateBounds();
-}
-function updateBounds() {
-    if (!markers.length) { leftBound=0; rightBound=800; return; }
-    const xs = markers.map(m=>m.x).sort((a,b)=>a-b);
-    leftBound = xs[0];
-    rightBound = xs[xs.length-1] + BOX_SIZE;
-}
+function initMarkers() { markers = DEFAULT_MARKERS.map(x=>({x})); updateBounds(); }
+function updateBounds() { if (!markers.length) { leftBound=0; rightBound=800; return; } const xs = markers.map(m=>m.x).sort((a,b)=>a-b); leftBound = xs[0]; rightBound = xs[xs.length-1] + BOX_SIZE; }
 function getRandomMarkerX() { return markers.length ? markers[Math.floor(Math.random()*markers.length)].x : 400; }
 
-// ========== СПАВН ЯЩИКОВ ==========
 function spawnBox() {
     if (!gameRunning || gamePaused || exploding) return;
     const targetX = getRandomMarkerX();
@@ -560,7 +353,7 @@ function spawnBox() {
     const box = { x: targetX + BOX_SIZE/2, y: 20, active: true, tint: null };
     boxes.push(box);
     const startY = box.y;
-    const duration = Math.min(400, Math.abs(targetY-startY)*2);
+    const duration = Math.min(350, Math.abs(targetY-startY)*2);
     const startTime = performance.now();
     function animate(now) {
         const elapsed = now - startTime;
@@ -568,7 +361,7 @@ function spawnBox() {
         t = t*t;
         box.y = startY + (targetY-startY)*t;
         if (t<1) requestAnimationFrame(animate);
-        else { box.y = targetY; addToStack(box); checkHorizontalLines(); }
+        else { box.y = targetY; const skey = getStackKey(box.x); if(!stacks.has(skey)) stacks.set(skey,[]); stacks.get(skey).push(box); stacks.get(skey).sort((a,b)=>a.y-b.y); for(let i=0;i<stacks.get(skey).length;i++) stacks.get(skey)[i].y = getBoxBaseY() - i*BOX_SIZE; checkHorizontalLines(); }
     }
     requestAnimationFrame(animate);
 }
@@ -584,284 +377,198 @@ function gameOver(reason) {
     document.getElementById('touchPanel').style.display = 'none';
 }
 
-// ========== ПОЛНЫЙ РЕСТАРТ С СОХРАНЁННЫМИ НАСТРОЙКАМИ ==========
+function syncAllHeights() {
+    if (!gameRunning) return;
+    const allBoxes = [...boxes];
+    stacks.clear();
+    for (let box of allBoxes) {
+        const key = getStackKey(box.x);
+        if (!stacks.has(key)) stacks.set(key, []);
+        stacks.get(key).push(box);
+    }
+    for (let [key, stack] of stacks.entries()) {
+        stack.sort((a,b) => a.y - b.y);
+        for (let i = 0; i < stack.length; i++) stack[i].y = getBoxBaseY() - i * BOX_SIZE;
+    }
+    let standingOnBox = false;
+    const feetY = playerY + PLAYER_HALF_HEIGHT;
+    for (let box of boxes) {
+        const boxTop = box.y - BOX_SIZE/2;
+        const boxLeft = box.x - BOX_SIZE/2, boxRight = box.x + BOX_SIZE/2;
+        if (playerX + PLAYER_HALF_WIDTH > boxLeft && playerX - PLAYER_HALF_WIDTH < boxRight) {
+            if (Math.abs(feetY - boxTop) < 15) {
+                playerY = boxTop - standOnBoxOffset - PLAYER_HALF_HEIGHT;
+                playerVy = 0; grounded = true; standingOnBox = true; break;
+            }
+        }
+    }
+    if (!standingOnBox && playerY + PLAYER_HALF_HEIGHT > playerGroundY) {
+        playerY = playerGroundY - PLAYER_HALF_HEIGHT; playerVy = 0; grounded = true;
+    }
+    document.getElementById('playerGroundValue').innerText = Math.round(playerGroundY);
+    document.getElementById('boxGroundValue').innerText = Math.round(boxGroundY);
+    document.getElementById('standOffsetValue').innerText = standOnBoxOffset;
+    showToast(`✅ Синхронизация: пол=${playerGroundY} ящ=${boxGroundY} смещ=${standOnBoxOffset}`);
+}
+
+function saveFullConfig() {
+    const fullConfig = `// ===== ПОЛНАЯ КОНФИГУРАЦИЯ ИГРЫ =====
+const SAVED_PLAYER_GROUND_Y = ${playerGroundY};
+const SAVED_BOX_GROUND_Y = ${boxGroundY};
+const SAVED_STAND_OFFSET = ${standOnBoxOffset};
+const SAVED_PLAYER_SPEED = ${playerSpeed};
+const SAVED_BOX_FALL_SPEED = ${boxFallSpeedMultiplier};
+// ===========================================`;
+    navigator.clipboard.writeText(fullConfig).then(() => showToast(`💾 Конфигурация скопирована!`, true));
+}
+function saveToCode() { saveFullConfig(); }
+
 function fullRestart() {
     if (spawnInterval) clearInterval(spawnInterval);
     if (animationFrameId) cancelAnimationFrame(animationFrameId);
-    
     gameRunning = false;
     gamePaused = false;
     score = 0;
-    godMode = false;
-    leftPressed = false;
-    rightPressed = false;
-    boxes = [];
-    stacks.clear();
-    exploding = false;
-    pushCooldown = false;
-    particles = [];
+    leftPressed = false; rightPressed = false;
+    boxes = []; stacks.clear(); exploding = false; pushCooldown = false; particles = [];
     
-    // ПРИМЕНЯЕМ СОХРАНЁННЫЕ НАСТРОЙКИ
     playerGroundY = SAVED_PLAYER_GROUND_Y;
     boxGroundY = SAVED_BOX_GROUND_Y;
     standOnBoxOffset = SAVED_STAND_OFFSET;
+    playerSpeed = SAVED_PLAYER_SPEED;
+    boxFallSpeedMultiplier = SAVED_BOX_FALL_SPEED;
     
     document.getElementById('playerGroundValue').innerText = playerGroundY;
     document.getElementById('boxGroundValue').innerText = boxGroundY;
     document.getElementById('standOffsetValue').innerText = standOnBoxOffset;
+    document.getElementById('playerSpeedValue').innerText = playerSpeed.toFixed(1);
+    document.getElementById('boxFallSpeedValue').innerText = boxFallSpeedMultiplier.toFixed(2);
     
     playerX = markers.length ? markers[0].x + BOX_SIZE/2 : 200;
     playerY = playerGroundY - PLAYER_HALF_HEIGHT;
-    playerVy = 0;
-    grounded = true;
-    jumpCd = false;
-    lastDir = 'right';
-    
+    playerVy = 0; grounded = true; jumpCd = false;
     document.getElementById('scoreBoard').innerHTML = 'ОЧКИ: 0';
-    document.getElementById('btnGodMode').classList.remove('active');
     
     gameRunning = true;
-    gamePaused = false;
-    
-    if (spawnInterval) clearInterval(spawnInterval);
-    spawnInterval = setInterval(() => spawnBox(), SPAWN_DELAY / currentSpeed);
-    
-    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    const delayMs = BASE_SPAWN_DELAY / Math.max(0.5, spawnSpeedMultiplier);
+    spawnInterval = setInterval(() => spawnBox(), delayMs);
     animationFrameId = requestAnimationFrame(gameLoop);
-}
-
-// ========== ОСНОВНОЙ ЦИКЛ ==========
-function gameLoop() {
-    if (!gameRunning || gamePaused) { 
-        animationFrameId = requestAnimationFrame(gameLoop); 
-        return; 
-    }
-
-    let moveLeft = leftPressed;
-    let moveRight = rightPressed;
-    
-    if (moveLeft && !moveRight) { playerX -= PLAYER_SPEED * currentSpeed; lastDir = 'left'; }
-    else if (moveRight && !moveLeft) { playerX += PLAYER_SPEED * currentSpeed; lastDir = 'right'; }
-
-    const playerLeft = playerX - PLAYER_HALF_WIDTH;
-    const playerRight = playerX + PLAYER_HALF_WIDTH;
-    for (let box of boxes) {
-        const boxLeft = box.x - BOX_SIZE/2;
-        const boxRight = box.x + BOX_SIZE/2;
-        const boxTop = box.y - BOX_SIZE/2;
-        const boxBottom = box.y + BOX_SIZE/2;
-        const verticalOverlap = (playerY - PLAYER_HALF_HEIGHT < boxBottom && playerY + PLAYER_HALF_HEIGHT > boxTop);
-        if (verticalOverlap) {
-            if (playerRight > boxLeft && playerLeft < boxLeft) {
-                playerX = boxLeft - PLAYER_HALF_WIDTH;
-            }
-            else if (playerLeft < boxRight && playerRight > boxRight) {
-                playerX = boxRight + PLAYER_HALF_WIDTH;
-            }
-        }
-    }
-
-    if (jumpRequested && grounded && !jumpCd) {
-        playerVy = JUMP_POWER * Math.sqrt(currentSpeed);
-        grounded = false;
-        jumpCd = true;
-        setTimeout(() => { jumpCd = false; }, 350);
-    }
-    jumpRequested = false;
-
-    if (!grounded) {
-        playerVy += GRAVITY * currentSpeed;
-        playerY += playerVy;
-    }
-
-    let platformY = null;
-    let feetY = playerY + PLAYER_HALF_HEIGHT;
-    for (let box of boxes) {
-        const boxTop = box.y - BOX_SIZE/2;
-        const boxLeft = box.x - BOX_SIZE/2;
-        const boxRight = box.x + BOX_SIZE/2;
-        if (playerX + PLAYER_HALF_WIDTH > boxLeft && playerX - PLAYER_HALF_WIDTH < boxRight) {
-            const targetStandY = boxTop - standOnBoxOffset;
-            if (feetY >= targetStandY - 5 && feetY <= targetStandY + 8 && playerVy >= 0) {
-                platformY = targetStandY;
-                break;
-            }
-        }
-    }
-
-    if (platformY !== null) {
-        playerY = platformY - PLAYER_HALF_HEIGHT;
-        playerVy = 0;
-        grounded = true;
-    } else {
-        if (playerY + PLAYER_HALF_HEIGHT >= playerGroundY) {
-            playerY = playerGroundY - PLAYER_HALF_HEIGHT;
-            playerVy = 0;
-            grounded = true;
-        } else {
-            grounded = false;
-        }
-    }
-
-    const minX = leftBound + PLAYER_HALF_WIDTH;
-    const maxX = rightBound - PLAYER_HALF_WIDTH;
-    playerX = Math.min(maxX, Math.max(minX, playerX));
-
-    if (!pushCooldown && !exploding && (moveLeft || moveRight)) {
-        const dir = moveLeft ? -1 : 1;
-        const playerFrontX = playerX + (dir === 1 ? PLAYER_HALF_WIDTH : -PLAYER_HALF_WIDTH);
-        const playerBottom = playerY + PLAYER_HALF_HEIGHT;
-        for (let box of boxes) {
-            const boxTop = box.y - BOX_SIZE/2;
-            if (Math.abs(box.x - playerFrontX) < BOX_SIZE/2 && Math.abs(boxTop - playerBottom) < 10) {
-                tryPushBox(box, dir);
-                break;
-            }
-        }
-    }
-
-    updateParticles();
-    drawBackground();
-    drawMarkers();
-    drawBoxes();
-    drawPlayer();
-    drawParticles();
-    drawUI();
-
-    animationFrameId = requestAnimationFrame(gameLoop);
+    showToast(`🔄 Рестарт: скорость=${playerSpeed.toFixed(1)} падение=x${boxFallSpeedMultiplier.toFixed(2)}`);
 }
 
 let jumpRequested = false;
 function jump() { if (gameRunning && !gamePaused) jumpRequested = true; }
 
-// ========== ИНИЦИАЛИЗАЦИЯ ИГРЫ С СОХРАНЁННЫМИ НАСТРОЙКАМИ ==========
-function initGame() {
-    // ПРИМЕНЯЕМ СОХРАНЁННЫЕ НАСТРОЙКИ ПРИ СТАРТЕ
-    playerGroundY = SAVED_PLAYER_GROUND_Y;
-    boxGroundY = SAVED_BOX_GROUND_Y;
-    standOnBoxOffset = SAVED_STAND_OFFSET;
+function updateParticles() {
+    for (let i=particles.length-1;i>=0;i--) { let p=particles[i]; p.x+=p.vx; p.y+=p.vy; p.vy+=0.2; p.life-=0.02; if (p.life<=0 || p.y>H+50) particles.splice(i,1); }
+}
+function drawBackground() { ctx.fillStyle='#2a4a5a'; ctx.fillRect(0,0,W,H); ctx.fillStyle='#3a6a5a'; ctx.fillRect(0, playerGroundY-2, W, 2); }
+function drawMarkers() { if(!markersVisible) return; for(let m of markers){ ctx.fillStyle='rgba(255,0,0,0.25)'; ctx.fillRect(m.x,0,BOX_SIZE,H); ctx.strokeStyle='rgba(255,0,0,0.8)'; ctx.strokeRect(m.x,0,BOX_SIZE,H); } }
+function drawBoxes() { for(let box of boxes){ ctx.fillStyle=box.tint||'#ccaa66'; ctx.fillRect(box.x-BOX_SIZE/2,box.y-BOX_SIZE/2,BOX_SIZE,BOX_SIZE); ctx.strokeStyle='#886633'; ctx.strokeRect(box.x-BOX_SIZE/2,box.y-BOX_SIZE/2,BOX_SIZE,BOX_SIZE); if(box.tint&&box.tint!=='#ccaa66'){ ctx.globalAlpha=0.5; ctx.fillStyle=box.tint; ctx.fillRect(box.x-BOX_SIZE/2,box.y-BOX_SIZE/2,BOX_SIZE,BOX_SIZE); ctx.globalAlpha=1; } } }
+function drawPlayer() { ctx.fillStyle='#ffaa66'; ctx.beginPath(); ctx.ellipse(playerX, playerY, PLAYER_HALF_WIDTH, PLAYER_HALF_HEIGHT, 0, 0, Math.PI*2); ctx.fill(); ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(playerX-PLAYER_HALF_WIDTH*0.5, playerY-PLAYER_HALF_HEIGHT*0.3, 3, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(playerX+PLAYER_HALF_WIDTH*0.5, playerY-PLAYER_HALF_HEIGHT*0.3, 3, 0, Math.PI*2); ctx.fill(); ctx.fillStyle=lastDir==='right'?'#ffaa44':'#ff8844'; ctx.beginPath(); ctx.moveTo(playerX+(lastDir==='right'?PLAYER_HALF_WIDTH*0.6:-PLAYER_HALF_WIDTH*0.6), playerY); ctx.lineTo(playerX+(lastDir==='right'?PLAYER_HALF_WIDTH*1.1:-PLAYER_HALF_WIDTH*1.1), playerY-4); ctx.lineTo(playerX+(lastDir==='right'?PLAYER_HALF_WIDTH*1.1:-PLAYER_HALF_WIDTH*1.1), playerY+4); ctx.fill(); }
+function drawUI() { ctx.font='bold 20px monospace'; ctx.fillStyle='#ffdd88'; ctx.fillText(`ОЧКИ: ${score}`, W-110,28); ctx.font='9px monospace'; ctx.fillStyle='#aaffdd'; ctx.fillText(`ск:${playerSpeed.toFixed(1)}/пад:x${boxFallSpeedMultiplier.toFixed(2)}`, W-120,48); }
+
+function gameLoop() {
+    if (!gameRunning || gamePaused) { animationFrameId = requestAnimationFrame(gameLoop); return; }
+    let moveLeft = leftPressed, moveRight = rightPressed;
+    if (moveLeft && !moveRight) { playerX -= playerSpeed * spawnSpeedMultiplier; lastDir = 'left'; }
+    else if (moveRight && !moveLeft) { playerX += playerSpeed * spawnSpeedMultiplier; lastDir = 'right'; }
     
+    for (let box of boxes) {
+        const boxLeft = box.x-BOX_SIZE/2, boxRight = box.x+BOX_SIZE/2, boxTop = box.y-BOX_SIZE/2, boxBottom = box.y+BOX_SIZE/2;
+        if (playerY-PLAYER_HALF_HEIGHT < boxBottom && playerY+PLAYER_HALF_HEIGHT > boxTop) {
+            if (playerX+PLAYER_HALF_WIDTH > boxLeft && playerX-PLAYER_HALF_WIDTH < boxLeft) playerX = boxLeft - PLAYER_HALF_WIDTH;
+            else if (playerX-PLAYER_HALF_WIDTH < boxRight && playerX+PLAYER_HALF_WIDTH > boxRight) playerX = boxRight + PLAYER_HALF_WIDTH;
+        }
+    }
+    
+    if (jumpRequested && grounded && !jumpCd) { playerVy = DEFAULT_JUMP_POWER * Math.sqrt(spawnSpeedMultiplier); grounded = false; jumpCd = true; setTimeout(() => { jumpCd = false; }, 350); }
+    jumpRequested = false;
+    if (!grounded) { playerVy += DEFAULT_GRAVITY * spawnSpeedMultiplier; playerY += playerVy; }
+    
+    let platformY = null;
+    const feetY = playerY + PLAYER_HALF_HEIGHT;
+    for (let box of boxes) {
+        const boxTop = box.y - BOX_SIZE/2;
+        if (playerX+PLAYER_HALF_WIDTH > box.x-BOX_SIZE/2 && playerX-PLAYER_HALF_WIDTH < box.x+BOX_SIZE/2) {
+            const targetStandY = boxTop - standOnBoxOffset;
+            if (feetY >= targetStandY-5 && feetY <= targetStandY+8 && playerVy >= 0) { platformY = targetStandY; break; }
+        }
+    }
+    if (platformY !== null) { playerY = platformY - PLAYER_HALF_HEIGHT; playerVy = 0; grounded = true; }
+    else if (playerY+PLAYER_HALF_HEIGHT >= playerGroundY) { playerY = playerGroundY - PLAYER_HALF_HEIGHT; playerVy = 0; grounded = true; }
+    else grounded = false;
+    
+    playerX = Math.min(rightBound - PLAYER_HALF_WIDTH, Math.max(leftBound + PLAYER_HALF_WIDTH, playerX));
+    
+    if (!pushCooldown && !exploding && (moveLeft || moveRight)) {
+        const dir = moveLeft ? -1 : 1;
+        const playerFrontX = playerX + (dir===1 ? PLAYER_HALF_WIDTH : -PLAYER_HALF_WIDTH);
+        const playerBottom = playerY + PLAYER_HALF_HEIGHT;
+        for (let box of boxes) {
+            const boxTop = box.y - BOX_SIZE/2;
+            if (Math.abs(box.x - playerFrontX) < BOX_SIZE/2 && Math.abs(boxTop - playerBottom) < 12) { tryPushBox(box, dir); break; }
+        }
+    }
+    
+    updateParticles();
+    drawBackground(); drawMarkers(); drawBoxes(); drawPlayer(); drawUI();
+    animationFrameId = requestAnimationFrame(gameLoop);
+}
+
+function initGame() {
+    playerGroundY = SAVED_PLAYER_GROUND_Y; boxGroundY = SAVED_BOX_GROUND_Y; standOnBoxOffset = SAVED_STAND_OFFSET;
+    playerSpeed = SAVED_PLAYER_SPEED; boxFallSpeedMultiplier = SAVED_BOX_FALL_SPEED;
     document.getElementById('playerGroundValue').innerText = playerGroundY;
     document.getElementById('boxGroundValue').innerText = boxGroundY;
     document.getElementById('standOffsetValue').innerText = standOnBoxOffset;
-    
-    gameRunning = true;
-    gamePaused = false;
-    score = 0;
-    godMode = false;
-    leftPressed = false;
-    rightPressed = false;
+    document.getElementById('playerSpeedValue').innerText = playerSpeed.toFixed(1);
+    document.getElementById('boxFallSpeedValue').innerText = boxFallSpeedMultiplier.toFixed(2);
+    gameRunning = true; gamePaused = false; score = 0;
+    leftPressed = false; rightPressed = false;
     playerX = markers.length ? markers[0].x + BOX_SIZE/2 : 200;
-    playerY = playerGroundY - PLAYER_HALF_HEIGHT;
-    playerVy = 0;
-    grounded = true;
-    jumpCd = false;
-    boxes = [];
-    stacks.clear();
-    exploding = false;
-    pushCooldown = false;
-    particles = [];
+    playerY = playerGroundY - PLAYER_HALF_HEIGHT; playerVy = 0; grounded = true; jumpCd = false;
+    boxes = []; stacks.clear(); exploding = false; pushCooldown = false; particles = [];
     document.getElementById('scoreBoard').innerHTML = 'ОЧКИ: 0';
-    document.getElementById('btnGodMode').classList.remove('active');
     if (spawnInterval) clearInterval(spawnInterval);
-    spawnInterval = setInterval(spawnBox, SPAWN_DELAY / currentSpeed);
+    spawnInterval = setInterval(() => spawnBox(), BASE_SPAWN_DELAY / spawnSpeedMultiplier);
     document.getElementById('titleScreen').style.display = 'none';
     document.getElementById('ui').style.display = 'flex';
     document.getElementById('touchPanel').style.display = 'flex';
     if (animationFrameId) cancelAnimationFrame(animationFrameId);
     animationFrameId = requestAnimationFrame(gameLoop);
-    
-    showToast(`🎮 Игра запущена с настройками: ПОЛ=${playerGroundY} ЯЩ=${boxGroundY} СМЕЩ=${standOnBoxOffset}`, true);
+    showToast(`🎮 Игра с вашей конфигурацией: скорость=${playerSpeed}, падение=x${boxFallSpeedMultiplier}`);
 }
 
-// ========== УПРАВЛЕНИЕ ==========
 function setupControls() {
     window.addEventListener('keydown', (e) => {
-        if (e.key === 'ArrowLeft') leftPressed = true;
-        if (e.key === 'ArrowRight') rightPressed = true;
-        if (e.key === 'ArrowUp') jump();
-        if (e.key === 'q' || e.key === 'Q') playerGroundUp();
-        if (e.key === 'w' || e.key === 'W') playerGroundDown();
-        if (e.key === 'a' || e.key === 'A') boxGroundUp();
-        if (e.key === 's' || e.key === 'S') boxGroundDown();
-        if (e.key === 'z' || e.key === 'Z') standOffsetUp();
-        if (e.key === 'x' || e.key === 'X') standOffsetDown();
+        if(e.key === 'ArrowLeft') leftPressed=true;
+        if(e.key === 'ArrowRight') rightPressed=true;
+        if(e.key === 'ArrowUp') jump();
+        if(e.key === 'q') playerGroundUp(); if(e.key === 'w') playerGroundDown();
+        if(e.key === 'a') boxGroundUp(); if(e.key === 's') boxGroundDown();
+        if(e.key === 'z') updateStandOffset(2); if(e.key === 'x') updateStandOffset(-2);
     });
-    window.addEventListener('keyup', (e) => {
-        if (e.key === 'ArrowLeft') leftPressed = false;
-        if (e.key === 'ArrowRight') rightPressed = false;
-    });
-
-    const leftBtn = document.getElementById('btnLeft');
-    const rightBtn = document.getElementById('btnRight');
-    const jumpBtn = document.getElementById('btnJump');
-    const setTouch = (btn, cb) => {
-        btn.addEventListener('touchstart', (e) => { e.preventDefault(); cb(true); });
-        btn.addEventListener('touchend', (e) => { e.preventDefault(); cb(false); });
-        btn.addEventListener('mousedown', () => cb(true));
-        btn.addEventListener('mouseup', () => cb(false));
-        btn.addEventListener('mouseleave', () => cb(false));
-    };
-    setTouch(leftBtn, (v) => leftPressed = v);
-    setTouch(rightBtn, (v) => rightPressed = v);
-    jumpBtn.addEventListener('touchstart', (e) => { e.preventDefault(); jump(); });
-    jumpBtn.addEventListener('mousedown', jump);
-
-    document.getElementById('btnPause').onclick = () => { gamePaused = !gamePaused; };
-    document.getElementById('btnMenu').onclick = () => {
-        gameRunning = false;
-        if (spawnInterval) clearInterval(spawnInterval);
-        if (animationFrameId) cancelAnimationFrame(animationFrameId);
-        document.getElementById('titleScreen').style.display = 'flex';
-        document.getElementById('ui').style.display = 'none';
-        document.getElementById('touchPanel').style.display = 'none';
-    };
-    
-    document.getElementById('btnRestartGame').onclick = () => { fullRestart(); };
-    document.getElementById('btnToggleMarkers').onclick = () => {
-        markersVisible = !markersVisible;
-        document.getElementById('btnToggleMarkers').classList.toggle('active');
-    };
-    document.getElementById('btnGodMode').onclick = () => {
-        godMode = !godMode;
-        document.getElementById('btnGodMode').classList.toggle('active');
-    };
-    
-    document.getElementById('btnPlayerGroundUp').onclick = () => playerGroundUp();
-    document.getElementById('btnPlayerGroundDown').onclick = () => playerGroundDown();
-    document.getElementById('btnBoxGroundUp').onclick = () => boxGroundUp();
-    document.getElementById('btnBoxGroundDown').onclick = () => boxGroundDown();
-    document.getElementById('btnStandOffsetUp').onclick = () => standOffsetUp();
-    document.getElementById('btnStandOffsetDown').onclick = () => standOffsetDown();
-    
-    document.getElementById('btnSyncHeights').onclick = () => syncAllHeights();
-    document.getElementById('btnSaveToCode').onclick = () => saveToCode();
-    
+    window.addEventListener('keyup', (e) => { if(e.key === 'ArrowLeft') leftPressed=false; if(e.key === 'ArrowRight') rightPressed=false; });
+    document.getElementById('btnLeft').addEventListener('touchstart',e=>{e.preventDefault(); leftPressed=true;}); document.getElementById('btnLeft').addEventListener('touchend',e=>{e.preventDefault(); leftPressed=false;}); document.getElementById('btnLeft').addEventListener('mousedown',()=>leftPressed=true); document.getElementById('btnLeft').addEventListener('mouseup',()=>leftPressed=false);
+    document.getElementById('btnRight').onmousedown = ()=>rightPressed=true; document.getElementById('btnRight').onmouseup = ()=>rightPressed=false;
+    document.getElementById('btnJump').onclick = jump;
+    document.getElementById('btnPause').onclick = () => gamePaused = !gamePaused;
+    document.getElementById('btnMenu').onclick = () => { gameRunning=false; if(spawnInterval) clearInterval(spawnInterval); if(animationFrameId) cancelAnimationFrame(animationFrameId); document.getElementById('titleScreen').style.display='flex'; document.getElementById('ui').style.display='none'; document.getElementById('touchPanel').style.display='none'; };
+    document.getElementById('btnRestartGame').onclick = () => fullRestart();
+    document.getElementById('btnToggleMarkers').onclick = () => markersVisible = !markersVisible;
+    document.getElementById('btnPlayerGroundUp').onclick = () => updatePlayerGround(playerGroundY-5); document.getElementById('btnPlayerGroundDown').onclick = () => updatePlayerGround(playerGroundY+5);
+    document.getElementById('btnBoxGroundUp').onclick = () => updateBoxGround(boxGroundY-5); document.getElementById('btnBoxGroundDown').onclick = () => updateBoxGround(boxGroundY+5);
+    document.getElementById('btnStandOffsetUp').onclick = () => updateStandOffset(2); document.getElementById('btnStandOffsetDown').onclick = () => updateStandOffset(-2);
+    document.getElementById('btnSyncHeights').onclick = syncAllHeights;
+    document.getElementById('btnSaveToCode').onclick = saveToCode;
+    document.getElementById('btnSaveFullConfig').onclick = saveFullConfig;
+    document.getElementById('btnPlayerSpeedUp').onclick = playerSpeedUp; document.getElementById('btnPlayerSpeedDown').onclick = playerSpeedDown;
+    document.getElementById('btnBoxFallSpeedUp').onclick = boxFallSpeedUp; document.getElementById('btnBoxFallSpeedDown').onclick = boxFallSpeedDown;
     const speedBtns = {1:'btnSpeed1',2:'btnSpeed2',4:'btnSpeed4',8:'btnSpeed8'};
-    for (let [spd, id] of Object.entries(speedBtns)) {
-        document.getElementById(id).onclick = () => {
-            currentSpeed = Number(spd);
-            document.querySelectorAll('.speed-buttons button').forEach(btn => btn.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-            if (spawnInterval) {
-                clearInterval(spawnInterval);
-                spawnInterval = setInterval(() => spawnBox(), SPAWN_DELAY / currentSpeed);
-            }
-        };
-    }
+    for(let [spd,id] of Object.entries(speedBtns)) { document.getElementById(id).onclick = () => { spawnSpeedMultiplier = Number(spd); document.querySelectorAll('.speed-panel .active').forEach(btn=>btn.classList.remove('active')); document.getElementById(id).classList.add('active'); if(spawnInterval){ clearInterval(spawnInterval); spawnInterval = setInterval(()=>spawnBox(), BASE_SPAWN_DELAY / spawnSpeedMultiplier); } showToast(`⚡ Скорость спавна x${spawnSpeedMultiplier}`); }; }
 }
-
-// ========== ЗАПУСК ==========
-window.onload = () => {
-    canvas = document.getElementById('gameCanvas');
-    ctx = canvas.getContext('2d');
-    initMarkers();
-    setupControls();
-    drawBackground();
-    drawMarkers();
-    loadAssets(() => { console.log('Изображения загружены'); if (!gameRunning) { drawBackground(); drawMarkers(); } });
-    document.getElementById('startBtn').onclick = () => { initGame(); };
-};
+window.onload = () => { canvas = document.getElementById('gameCanvas'); ctx = canvas.getContext('2d'); initMarkers(); setupControls(); drawBackground(); document.getElementById('startBtn').onclick = () => initGame(); };
 </script>
 </body>
 </html>
