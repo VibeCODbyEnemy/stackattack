@@ -1,728 +1,867 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Складской грузчик — МОБИЛЬНАЯ ВЕРСИЯ</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📦%3C/text%3E%3C/svg%3E">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.80.1/phaser.min.js"></script>
-  <style>
-    * { user-select: none; touch-action: manipulation; }
-    body { margin: 0; overflow: hidden; background: #1a2a32; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    .top-panel { position: fixed; top: 12px; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; z-index: 2000; pointer-events: none; }
-    .top-buttons { display: flex; justify-content: center; gap: 8px; pointer-events: auto; flex-wrap: wrap; padding: 0 8px; }
-    .top-buttons button { background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.4); border-radius: 40px; color: white; font-size: 13px; font-weight: bold; padding: 6px 8px; min-width: 55px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); transition: 0.07s linear; touch-action: manipulation; cursor: pointer; font-family: monospace; }
-    .top-buttons button:active { transform: scale(0.95); background: rgba(100, 150, 220, 0.9); }
-    .score-board { background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); border-radius: 40px; padding: 6px 16px; color: white; font-size: 18px; font-weight: bold; font-family: monospace; pointer-events: auto; border: 1px solid rgba(255,215,0,0.6); }
-    .speed-buttons { display: flex; gap: 5px; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); border-radius: 40px; padding: 4px 8px; pointer-events: auto; }
-    .speed-buttons button { background: #ff8800; border: none; border-radius: 30px; color: white; font-weight: bold; padding: 4px 8px; font-size: 12px; cursor: pointer; transition: 0.07s linear; }
-    .speed-buttons button:active { transform: scale(0.95); background: #ffaa44; }
-    .speed-buttons .active { background: #00aa44; box-shadow: 0 0 8px #00ff00; }
-    .godmode-btn { background: #aa44ff !important; border-color: #ff88ff !important; }
-    .godmode-btn.active { background: #ff44aa !important; box-shadow: 0 0 12px #ff88ff; }
-    .marker-toggle-btn { background: #ff4444 !important; border-color: #ff8888 !important; }
-    .marker-toggle-btn.active { background: #00aa44 !important; }
-    .touch-panel { position: fixed; bottom: 20px; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; z-index: 1800; pointer-events: none; }
-    .move-group { display: flex; gap: 25px; background: rgba(0,0,0,0.4); padding: 10px 20px; border-radius: 100px; backdrop-filter: blur(8px); pointer-events: auto; }
-    .action-group { display: flex; gap: 25px; background: rgba(0,0,0,0.4); padding: 10px 20px; border-radius: 100px; backdrop-filter: blur(8px); pointer-events: auto; margin-right: 0; }
-    .touch-panel button { background: rgba(30,40,60,0.95); backdrop-filter: blur(12px); border: 2px solid rgba(255,255,255,0.5); border-radius: 60px; color: white; font-size: 28px; font-weight: bold; text-shadow: 0 2px 3px black; width: 70px; height: 70px; box-shadow: 0 6px 12px rgba(0,0,0,0.4); transition: 0.05s linear; touch-action: manipulation; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: monospace; }
-    .touch-panel button:active { transform: scale(0.92); background: rgba(100,150,220,0.9); border-color: #ffcc88; }
-    @media (max-width:650px){ .touch-panel button{ width:60px; height:60px; font-size:26px; } .move-group, .action-group { padding: 8px 15px; gap: 20px; } }
-    @media (max-width:500px){ .touch-panel button{ width:55px; height:55px; font-size:24px; } .move-group, .action-group { padding: 6px 12px; gap: 15px; } }
-    .debug-btn { background: rgba(0,0,0,0.75) !important; border-color: #00ff00 !important; color: #00ff00 !important; }
-    .debug-btn.active { background: #00aa44 !important; color: white !important; border-color: #ffffff !important; }
-    .info-panel { position: fixed; bottom: 10px; left: 10px; background: rgba(0,0,0,0.6); padding: 4px 8px; border-radius: 8px; color: #0f0; font-size: 9px; font-family: monospace; z-index: 2100; pointer-events: none; }
-    .zone-hint { position: fixed; top: 80px; right: 5px; background: rgba(0,0,0,0.5); padding: 3px 6px; border-radius: 5px; color: #ff8888; font-size: 8px; z-index: 2100; pointer-events: none; font-family: monospace; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Складской грузчик — сохранённые настройки высот</title>
+    <style>
+        * { user-select: none; touch-action: manipulation; }
+        body { margin: 0; min-height: 100vh; background: #1a2a32; display: flex; justify-content: center; align-items: center; font-family: monospace; }
+        .game-container { position: relative; }
+        canvas { display: block; margin: 0 auto; box-shadow: 0 0 20px rgba(0,0,0,0.3); cursor: pointer; background: #2a4a5a; }
+        .ui { position: fixed; top: 10px; left: 0; right: 0; display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; z-index: 100; pointer-events: none; }
+        .ui button, .score, .speed-buttons, .height-controls { pointer-events: auto; background: rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.4); border-radius: 40px; color: white; font-size: 13px; font-weight: bold; padding: 6px 12px; cursor: pointer; font-family: monospace; backdrop-filter: blur(4px); }
+        .score { background: rgba(0,0,0,0.8); border-radius: 40px; padding: 6px 16px; color: #ffdd88; font-size: 18px; font-weight: bold; border: 1px solid gold; }
+        .speed-buttons { display: inline-flex; gap: 5px; background: rgba(0,0,0,0.5); border-radius: 40px; padding: 4px 8px; }
+        .speed-buttons button { background: #ff8800; border: none; border-radius: 30px; padding: 4px 10px; font-size: 12px; }
+        .speed-buttons .active { background: #00aa44; }
+        .height-controls { display: inline-flex; gap: 5px; background: rgba(0,0,0,0.6); border-radius: 40px; padding: 4px 8px; align-items: center; }
+        .height-controls button { background: #4488ff; border: none; border-radius: 30px; padding: 4px 12px; font-size: 14px; font-weight: bold; cursor: pointer; }
+        .height-controls span { margin: 0 5px; font-size: 11px; color: #aaffdd; }
+        .height-indicator { font-size: 10px; background: #000000aa; border-radius: 20px; padding: 2px 6px; margin-left: 3px; }
+        .save-controls { background: #4a2a2a80 !important; }
+        .save-controls button { background: #ff8844 !important; }
+        .touch-panel { position: fixed; bottom: 20px; left: 0; right: 0; display: flex; justify-content: space-between; padding: 0 20px; pointer-events: none; z-index: 100; }
+        .move-group, .action-group { display: flex; gap: 20px; background: rgba(0,0,0,0.4); padding: 8px 20px; border-radius: 100px; backdrop-filter: blur(8px); pointer-events: auto; }
+        .touch-panel button { background: rgba(30,40,60,0.95); border: 2px solid rgba(255,255,255,0.5); border-radius: 60px; color: white; font-size: 28px; width: 70px; height: 70px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .touch-panel button:active { transform: scale(0.95); background: #4a6a8a; }
+        @media (max-width:650px){ .touch-panel button { width: 55px; height: 55px; font-size: 24px; } }
+        .info { position: fixed; bottom: 10px; left: 10px; background: rgba(0,0,0,0.6); padding: 4px 8px; border-radius: 8px; color: #0f0; font-size: 10px; pointer-events: none; }
+        .title-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1a2a32; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; }
+        .title-screen h1 { color: white; font-size: 48px; text-shadow: 0 0 10px #ffaa44; margin-bottom: 30px; }
+        .title-screen button { background: #ffaa44; border: none; font-size: 24px; padding: 12px 32px; border-radius: 40px; cursor: pointer; font-weight: bold; font-family: monospace; margin: 10px; }
+        .restart-btn { background: #aa4444 !important; color: white; font-size: 20px; }
+        .stand-offset-btn { background: #aa66ff !important; }
+        .sync-btn { background: #44aa88 !important; }
+        .save-to-code-btn { background: #ff6644 !important; }
+        .toast-msg { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #00aa44dd; color: white; padding: 8px 20px; border-radius: 40px; font-size: 14px; z-index: 2000; backdrop-filter: blur(8px); pointer-events: none; animation: fadeOut 2s forwards; }
+        @keyframes fadeOut { 0% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
+    </style>
 </head>
 <body>
-<div class="top-panel" id="topPanel" style="display: none;">
-  <div class="top-buttons">
+<div class="game-container">
+    <canvas id="gameCanvas" width="800" height="400"></canvas>
+</div>
+<div class="ui" id="ui" style="display: none;">
     <button id="btnPause">⏸️</button>
     <button id="btnMenu">📜</button>
-    <button id="btnToggleMarkers" class="marker-toggle-btn">🔴 ЗОНЫ</button>
-    <button id="btnDebug" class="debug-btn">🔍</button>
-    <button id="btnGodMode" class="godmode-btn">🛡️</button>
+    <button id="btnRestartGame">🔄 РЕСТАРТ</button>
+    <button id="btnToggleMarkers">🔴 ЗОНЫ</button>
+    <button id="btnGodMode">🛡️</button>
     <div class="speed-buttons">
-      <button id="btnSpeed1" class="active">x1</button>
-      <button id="btnSpeed2">x2</button>
-      <button id="btnSpeed4">x4</button>
-      <button id="btnSpeed8">x8</button>
+        <button id="btnSpeed1" class="active">x1</button>
+        <button id="btnSpeed2">x2</button>
+        <button id="btnSpeed4">x4</button>
+        <button id="btnSpeed8">x8</button>
     </div>
-  </div>
-  <div class="score-board" id="scoreBoard">ОЧКИ: 0</div>
+    <div class="height-controls" style="background: #2a3a2a80;">
+        <span>👤 ПОЛ</span>
+        <button id="btnPlayerGroundUp">▲</button>
+        <button id="btnPlayerGroundDown">▼</button>
+        <span id="playerGroundValue" class="height-indicator">360</span>
+    </div>
+    <div class="height-controls" style="background: #3a2a3a80;">
+        <span>📦 ЯЩИКИ</span>
+        <button id="btnBoxGroundUp">▲</button>
+        <button id="btnBoxGroundDown">▼</button>
+        <span id="boxGroundValue" class="height-indicator">370</span>
+    </div>
+    <div class="height-controls" style="background: #2a2a4a80;">
+        <span>📐 НА ЯЩИКЕ</span>
+        <button id="btnStandOffsetUp" class="stand-offset-btn">▲</button>
+        <button id="btnStandOffsetDown" class="stand-offset-btn">▼</button>
+        <span id="standOffsetValue" class="height-indicator">12</span>
+    </div>
+    <div class="height-controls save-controls">
+        <span>💾 СОХРАНЕНИЕ</span>
+        <button id="btnSyncHeights" class="sync-btn">🔄 СИНХР</button>
+        <button id="btnSaveToCode" class="save-to-code-btn">💾 СОХР. В КОД</button>
+    </div>
+    <div class="score" id="scoreBoard">ОЧКИ: 0</div>
 </div>
 <div class="touch-panel" id="touchPanel" style="display: none;">
-  <div class="move-group"><button id="btnLeft">◀</button><button id="btnRight">▶</button></div>
-  <div class="action-group"><button id="btnJump">▲</button></div>
+    <div class="move-group"><button id="btnLeft">◀</button><button id="btnRight">▶</button></div>
+    <div class="action-group"><button id="btnJump">▲</button></div>
 </div>
-<div class="zone-hint" id="zoneHint">🔴 ЗОНЫ ДЛЯ ЯЩИКОВ</div>
-<div class="info-panel" id="infoPanel">📦 Толкай ящики в красные зоны! 16+ в ряду = взрыв</div>
+<div class="info" id="infoPanel">📦 СОХРАНЁННЫЕ НАСТРОЙКИ: ПОЛ=360 ЯЩИКИ=370 ВЫСОТА_НА_ЯЩИКЕ=12 | Q/W A/S Z/X</div>
+<div class="title-screen" id="titleScreen">
+    <h1>📦 СКЛАДСКОЙ ГРУЗЧИК</h1>
+    <button id="startBtn">▶ НАЧАТЬ ИГРУ ◀</button>
+</div>
 
 <script>
-// ========== РАЗМЕРЫ ==========
-const PLAYER_SPRITE_WIDTH = 242;
-const PLAYER_SPRITE_HEIGHT = 358;
-const PLAYER_SCALE_FACTOR = 0.24;
-const PLAYER_WIDTH = Math.floor(PLAYER_SPRITE_WIDTH * PLAYER_SCALE_FACTOR);
-const PLAYER_HEIGHT = Math.floor(PLAYER_SPRITE_HEIGHT * PLAYER_SCALE_FACTOR);
+// ===== СОХРАНЁННЫЕ НАСТРОЙКИ ВЫСОТ (вставлены из буфера) =====
+// Эти значения применяются при старте игры и рестарте
+const SAVED_PLAYER_GROUND_Y = 360;
+const SAVED_BOX_GROUND_Y = 370;
+const SAVED_STAND_OFFSET = 12;
+// ============================================================
 
-const COLLIDER_WIDTH = PLAYER_WIDTH - 8;
-const COLLIDER_HEIGHT = PLAYER_HEIGHT - 10;
-const COLLIDER_OFFSET_X = (PLAYER_WIDTH - COLLIDER_WIDTH) / 2;
-const COLLIDER_OFFSET_Y = 5;
+// ========== КОНСТАНТЫ ==========
+const W = 800, H = 400;
+const BOX_SIZE = 38;
+const MAX_STACK = 8;
+const WIN_LINE = 16;
+const SPAWN_DELAY = 2200;
+const PLAYER_SPEED = 4;
+const JUMP_POWER = -8;
+const GRAVITY = 0.5;
+const DEFAULT_MARKERS = [97,135,173,211,249,287,325,363,401,439,477,515,553,591,629,667];
 
-const PLAYER_GROUND_Y = 340;
-const BOX_GROUND_Y = 370;
-const MAX_STACK_HEIGHT = 8;
-const WIN_LINE_LENGTH = 16;
+// Размеры коллайдера персонажа
+const PLAYER_WIDTH = 32;
+const PLAYER_HEIGHT = 52;
+const PLAYER_HALF_WIDTH = PLAYER_WIDTH/2;
+const PLAYER_HALF_HEIGHT = PLAYER_HEIGHT/2;
 
-const BOX_VISUAL_SCALE = 0.45;
-const BOX_VISUAL_SIZE = 38;
-const BOX_CORRECT_Y = BOX_GROUND_Y - BOX_VISUAL_SIZE / 2;
-
-// ========== ГЛОБАЛЬНЫЕ ==========
-let player, boxes, scoreText, menuText, titleScreen, clickArea;
-let score = 0, isGameOver = false, gameStarted = false, isPaused = false, showMenu = false;
-let touchLeft = false, touchRight = false, jumpCooldown = false;
-let lastDirection = 'right';
-let craneSpawnTimer, standingOnBox = false;
-let markers = [], markersEnabled = true, playerDebugRect = null;
-let debugEnabled = false, currentScene = null, leftBound = 0, rightBound = 800;
-let currentSpeed = 1;
+// ========== ГЛОБАЛЬНЫЕ (инициализация с сохранёнными значениями) ==========
+let canvas, ctx;
+let gameRunning = false;
+let gamePaused = false;
+let score = 0;
 let godMode = false;
-let isExploding = false;
 
-let boxDebugRects = new Map();
-let activePushedBox = null;
+// РАЗДЕЛЬНЫЕ ВЫСОТЫ — используем сохранённые значения
+let playerGroundY = SAVED_PLAYER_GROUND_Y;
+let boxGroundY = SAVED_BOX_GROUND_Y;
+let standOnBoxOffset = SAVED_STAND_OFFSET;
 
-const baseSpawnDelay = 2200;
-const basePlayerSpeed = 180;
-const baseGravity = 800;
-const baseJumpPower = -340;
+let playerX = 200, playerY = playerGroundY - PLAYER_HALF_HEIGHT;
+let playerVy = 0;
+let grounded = true;
+let jumpCd = false;
+let lastDir = 'right';
 
-const STORAGE_KEY = 'warehouse_markers_simple';
-const DEFAULT_MARKERS_X = [97, 135, 173, 211, 249, 287, 325, 363, 401, 439, 477, 515, 553, 591, 629, 667];
+let leftPressed = false, rightPressed = false;
+let boxes = [];
+let stacks = new Map();
+let markers = [];
+let markersVisible = false;
+let leftBound = 0, rightBound = 800;
 
-const PLAYER_SPRITE_Y = PLAYER_GROUND_Y - PLAYER_HEIGHT + COLLIDER_OFFSET_Y;
+let currentSpeed = 1;
+let spawnInterval = null;
+let exploding = false;
+let pushCooldown = false;
+let animationFrameId = null;
 
-const config = {
-  type: Phaser.AUTO,
-  scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH, width: 800, height: 400 },
-  physics: { default: 'arcade', arcade: { gravity: { y: baseGravity }, debug: false } },
-  scene: { preload, create, update }
+// Эффекты
+let particles = [];
+
+// Изображения
+let images = {};
+let assetsLoaded = false;
+const imageList = {
+    bg: 'bg.png',
+    run1: 'run1.png',
+    run2: 'run2.png',
+    run3: 'run3.png',
+    run4: 'run4.png',
+    box: 'box.png',
+    title: 'title.png'
 };
-const game = new Phaser.Game(config);
 
-// ========== ОТЛАДКА ==========
-function updateBoxDebugRects() {
-  if (!currentScene || !boxes) return;
-  for (let [box, rect] of boxDebugRects.entries()) {
-    if (rect && rect.destroy) rect.destroy();
-  }
-  boxDebugRects.clear();
-  if (!debugEnabled) return;
-  const activeBoxes = boxes.getChildren().filter(b => b && b.active);
-  for (let box of activeBoxes) {
-    const rect = currentScene.add.rectangle(box.x, box.y, BOX_VISUAL_SIZE, BOX_VISUAL_SIZE, 0xff0000, 0);
-    rect.setStrokeStyle(2, 0xff0000, 0.8);
-    rect.setDepth(2000);
-    boxDebugRects.set(box, rect);
-  }
+// ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
+function showToast(msg, isSuccess = true) {
+    const toast = document.createElement('div');
+    toast.className = 'toast-msg';
+    toast.textContent = msg;
+    toast.style.background = isSuccess ? '#00aa44dd' : '#ff6644dd';
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2000);
 }
 
-function syncBoxDebugRects() {
-  if (!debugEnabled) return;
-  for (let [box, rect] of boxDebugRects.entries()) {
-    if (box && box.active && rect && rect.active) {
-      rect.setPosition(box.x, box.y);
-    } else if (rect && rect.destroy) {
-      rect.destroy();
-      boxDebugRects.delete(box);
+function getBoxBaseY() {
+    return boxGroundY - BOX_SIZE/2;
+}
+
+// Регулировка пола игрока
+function updatePlayerGround(newY) {
+    let clamped = Math.min(395, Math.max(280, newY));
+    if (playerGroundY === clamped) return;
+    const deltaY = clamped - playerGroundY;
+    playerGroundY = clamped;
+    
+    playerY += deltaY;
+    if (playerY + PLAYER_HALF_HEIGHT >= playerGroundY) {
+        playerY = playerGroundY - PLAYER_HALF_HEIGHT;
+        playerVy = 0;
+        grounded = true;
     }
-  }
+    document.getElementById('playerGroundValue').innerText = Math.round(playerGroundY);
+    canvas.style.transform = `translate(0, ${deltaY > 0 ? '1px' : '-1px'})`;
+    setTimeout(() => { canvas.style.transform = ''; }, 100);
 }
 
-function toggleDebug() {
-  debugEnabled = !debugEnabled;
-  const btn = document.getElementById('btnDebug');
-  if (debugEnabled) {
-    btn.classList.add('active');
-    updateBoxDebugRects();
-    if (playerDebugRect) playerDebugRect.setVisible(true);
-  } else {
-    btn.classList.remove('active');
-    for (let [box, rect] of boxDebugRects.entries()) {
-      if (rect && rect.destroy) rect.destroy();
+// Регулировка земли для ящиков
+function updateBoxGround(newY) {
+    let clamped = Math.min(395, Math.max(280, newY));
+    if (boxGroundY === clamped) return;
+    boxGroundY = clamped;
+    
+    const allBoxes = [...boxes];
+    stacks.clear();
+    for (let box of allBoxes) {
+        const key = getStackKey(box.x);
+        if (!stacks.has(key)) stacks.set(key, []);
+        stacks.get(key).push(box);
     }
-    boxDebugRects.clear();
-    if (playerDebugRect) playerDebugRect.setVisible(false);
-  }
-}
-
-function setSpeed(multiplier) {
-  currentSpeed = multiplier;
-  if (!currentScene) return;
-  currentScene.physics.world.gravity.y = baseGravity * multiplier;
-  if (player) player.body.setMaxVelocity(300 * multiplier, 550);
-  if (craneSpawnTimer) {
-    craneSpawnTimer.remove();
-    const newDelay = Math.max(500, baseSpawnDelay / multiplier);
-    craneSpawnTimer = currentScene.time.addEvent({ delay: newDelay, callback: () => spawnCrane.call(currentScene), callbackScope: currentScene, loop: true });
-  }
-  document.getElementById('btnSpeed1').classList.remove('active');
-  document.getElementById('btnSpeed2').classList.remove('active');
-  document.getElementById('btnSpeed4').classList.remove('active');
-  document.getElementById('btnSpeed8').classList.remove('active');
-  if (multiplier === 1) document.getElementById('btnSpeed1').classList.add('active');
-  if (multiplier === 2) document.getElementById('btnSpeed2').classList.add('active');
-  if (multiplier === 4) document.getElementById('btnSpeed4').classList.add('active');
-  if (multiplier === 8) document.getElementById('btnSpeed8').classList.add('active');
-}
-
-function resetMovementFlags() { touchLeft = false; touchRight = false; }
-function getPlayerSpeed() { return basePlayerSpeed * currentSpeed; }
-function getJumpPower() { return baseJumpPower * Math.sqrt(currentSpeed); }
-
-function toggleGodMode() {
-  godMode = !godMode;
-  const btn = document.getElementById('btnGodMode');
-  if (godMode) {
-    btn.classList.add('active');
-    if (currentScene) {
-      const msg = currentScene.add.text(400, 60, '🛡️ БЕССМЕРТИЕ', 
-        { fontSize: '16px', fill: '#ff88ff', fontWeight: 'bold', backgroundColor: '#000000aa', padding: { x: 10, y: 5 } });
-      msg.setOrigin(0.5); msg.setDepth(2000);
-      currentScene.time.delayedCall(1500, () => msg.destroy());
-    }
-  } else {
-    btn.classList.remove('active');
-    if (currentScene) {
-      const msg = currentScene.add.text(400, 60, 'БЕССМЕРТИЕ ВЫКЛ', 
-        { fontSize: '16px', fill: '#ffaa44', fontWeight: 'bold', backgroundColor: '#000000aa', padding: { x: 10, y: 5 } });
-      msg.setOrigin(0.5); msg.setDepth(2000);
-      currentScene.time.delayedCall(1500, () => msg.destroy());
-    }
-  }
-}
-
-// ========== МАРКЕРЫ ==========
-function saveMarkers() { localStorage.setItem(STORAGE_KEY, JSON.stringify(markers.map(m => m.x))); }
-function loadMarkers() {
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved) { try { const savedX = JSON.parse(saved); if (savedX && savedX.length) { markers = savedX.map((x, idx) => ({ id: idx + 1, x: x })); updateBounds(); return; } } catch(e) { } }
-  markers = DEFAULT_MARKERS_X.map((x, idx) => ({ id: idx + 1, x: x }));
-  updateBounds(); saveMarkers();
-}
-function updateBounds() {
-  if (!markers.length) { leftBound = 0; rightBound = 800; return; }
-  const sorted = [...markers].sort((a,b) => a.x - b.x);
-  leftBound = sorted[0].x;
-  rightBound = sorted[sorted.length-1].x + BOX_VISUAL_SIZE;
-}
-function getRandomMarkerX() { return markers.length ? markers[Math.floor(Math.random() * markers.length)].x + BOX_VISUAL_SIZE/2 : 400; }
-function rebuildMarkers() {
-  if (!currentScene) return;
-  markers.forEach(m => { if (m.rect) m.rect.destroy(); if (m.text) m.text.destroy(); });
-  markers.forEach(m => {
-    const rect = currentScene.add.rectangle(m.x + BOX_VISUAL_SIZE/2, 200, BOX_VISUAL_SIZE, 400, 0xff0000, 0.35);
-    rect.setStrokeStyle(2, 0xff0000, 0.8); rect.setDepth(500); rect.setVisible(markersEnabled); m.rect = rect;
-    const text = currentScene.add.text(m.x + BOX_VISUAL_SIZE/2 - 12, 12, `${Math.round(m.x)}`, { fontSize: '8px', fill: '#ff8888', fontWeight: 'bold', backgroundColor: '#00000099', padding: { x: 2, y: 1 } });
-    text.setDepth(501); text.setVisible(markersEnabled); m.text = text;
-  });
-}
-function toggleMarkers() {
-  markersEnabled = !markersEnabled;
-  const btn = document.getElementById('btnToggleMarkers');
-  markers.forEach(m => { if (m.rect) m.rect.setVisible(markersEnabled); if (m.text) m.text.setVisible(markersEnabled); });
-  if (markersEnabled) {
-    btn.classList.remove('active');
-    btn.style.background = "#ff4444";
-    document.getElementById('zoneHint').style.opacity = "1";
-  } else {
-    btn.classList.add('active');
-    btn.style.background = "#00aa44";
-    document.getElementById('zoneHint').style.opacity = "0.3";
-  }
-}
-function enforceBoundary() {
-  if (!player) return;
-  const minX = leftBound + PLAYER_WIDTH/2, maxX = rightBound - PLAYER_WIDTH/2;
-  if (player.x < minX) { player.x = minX; player.body.reset(player.x, player.y); player.body.setVelocityX(0); }
-  if (player.x > maxX) { player.x = maxX; player.body.reset(player.x, player.y); player.body.setVelocityX(0); }
-  boxes.getChildren().forEach(box => {
-    if (!box.active) return;
-    const minBoxX = leftBound + BOX_VISUAL_SIZE/2, maxBoxX = rightBound - BOX_VISUAL_SIZE/2;
-    if (box.x < minBoxX) { box.x = minBoxX; box.body.reset(box.x, box.y); box.body.setVelocityX(0); }
-    if (box.x > maxBoxX) { box.x = maxBoxX; box.body.reset(box.x, box.y); box.body.setVelocityX(0); }
-  });
-}
-
-// ========== ВЫСОТА ==========
-function checkStackHeight() {
-  if (!boxes) return false;
-  const boxList = boxes.getChildren().filter(b => b.active);
-  const columns = new Map();
-  for (let box of boxList) {
-    const xKey = Math.round(box.x / 10) * 10;
-    if (!columns.has(xKey)) columns.set(xKey, []);
-    columns.get(xKey).push(box);
-  }
-  for (let [x, column] of columns.entries()) {
-    const uniqueY = new Set();
-    for (let box of column) uniqueY.add(Math.round(box.y / BOX_VISUAL_SIZE));
-    if (uniqueY.size > MAX_STACK_HEIGHT) {
-      gameOverWithReason(`ВЫСОТА ${MAX_STACK_HEIGHT}!`);
-      return true;
-    }
-  }
-  return false;
-}
-function wouldExceedHeight(box, targetX) {
-  if (!boxes) return false;
-  const boxList = boxes.getChildren().filter(b => b.active && b !== box);
-  const sameColumn = boxList.filter(b => Math.abs(b.x - targetX) < BOX_VISUAL_SIZE/2);
-  const uniqueYLevels = new Set();
-  for (let b of sameColumn) uniqueYLevels.add(Math.round(b.y / BOX_VISUAL_SIZE));
-  return (uniqueYLevels.size + 1) > MAX_STACK_HEIGHT;
-}
-
-// ========== ГРУППЫ ==========
-let boxGroupMap = new Map();
-function getGroup(box) {
-  if (!boxGroupMap.has(box)) boxGroupMap.set(box, new Set([box]));
-  return boxGroupMap.get(box);
-}
-function mergeGroupsVertical(boxA, boxB) {
-  const dx = Math.abs(boxA.x - boxB.x);
-  const dy = Math.abs(boxA.y - boxB.y);
-  if (dx < BOX_VISUAL_SIZE - 5 && Math.abs(dy - BOX_VISUAL_SIZE) < 5) {
-    const groupA = getGroup(boxA), groupB = getGroup(boxB);
-    if (groupA !== groupB) {
-      if (groupB.size > groupA.size) {
-        for (let b of groupA) { groupB.add(b); boxGroupMap.set(b, groupB); }
-      } else {
-        for (let b of groupB) { groupA.add(b); boxGroupMap.set(b, groupA); }
-      }
-    }
-  }
-}
-function stabilizeVerticalGroup(group) {
-  if (!group || group.size === 0) return;
-  const boxesArr = Array.from(group).filter(b => b && b.active);
-  if (boxesArr.length === 0) return;
-  boxesArr.sort((a,b) => a.y - b.y);
-  for (let i = 0; i < boxesArr.length; i++) {
-    const targetY = BOX_GROUND_Y - BOX_VISUAL_SIZE/2 - (i * BOX_VISUAL_SIZE);
-    boxesArr[i].y = targetY;
-    if (boxesArr[i].body) {
-      boxesArr[i].body.reset(boxesArr[i].x, boxesArr[i].y);
-      boxesArr[i].body.setAllowGravity(false);
-      boxesArr[i].body.setVelocityY(0);
-      boxesArr[i].body.setImmovable(true);
-    }
-  }
-}
-function handleBoxCollision(boxA, boxB) {
-  if (!boxA.active || !boxB.active) return;
-  mergeGroupsVertical(boxA, boxB);
-  currentScene.time.delayedCall(50, () => {
-    if (boxA.active && boxB.active) {
-      stabilizeVerticalGroup(getGroup(boxA));
-      checkHorizontalLines();
-    }
-  });
-}
-
-// ========== ТОЛКАНИЕ ==========
-function startPushBox(box, direction) {
-  if (activePushedBox) return;
-  if (!box || !box.active) return;
-  
-  const newX = box.x + direction * BOX_VISUAL_SIZE;
-  const otherBoxes = boxes.getChildren().filter(b => b.active && b !== box);
-  for (let other of otherBoxes) {
-    if (Math.abs(other.x - newX) < BOX_VISUAL_SIZE - 3 && Math.abs(other.y - box.y) < BOX_VISUAL_SIZE - 5) {
-      return;
-    }
-  }
-  
-  const boundMin = leftBound + BOX_VISUAL_SIZE/2;
-  const boundMax = rightBound - BOX_VISUAL_SIZE/2;
-  if (newX < boundMin || newX > boundMax) return;
-  
-  activePushedBox = box;
-  box.setTint(0xaaffcc);
-  
-  currentScene.tweens.add({
-    targets: box,
-    x: newX,
-    duration: 180,
-    ease: 'Linear',
-    onUpdate: () => { if (box.body) box.body.reset(box.x, box.y); },
-    onComplete: () => {
-      if (box && box.active) {
-        box.clearTint();
-        box.y = BOX_CORRECT_Y;
-        if (box.body) box.body.reset(box.x, box.y);
-        const otherBoxes2 = boxes.getChildren().filter(b => b.active && b !== box);
-        for (let other of otherBoxes2) {
-          if (Math.abs(other.x - box.x) < BOX_VISUAL_SIZE - 3 && Math.abs(other.y - box.y) < BOX_VISUAL_SIZE - 3) {
-            mergeGroupsVertical(box, other);
-          }
+    for (let [key, stack] of stacks.entries()) {
+        stack.sort((a,b) => a.y - b.y);
+        for (let i = 0; i < stack.length; i++) {
+            stack[i].y = getBoxBaseY() - i * BOX_SIZE;
         }
-        stabilizeVerticalGroup(getGroup(box));
-        checkHorizontalLines();
-        checkStackHeight();
-      }
-      activePushedBox = null;
     }
-  });
-  
-  const group = getGroup(box);
-  if (group && group.size > 1) {
-    for (let member of group) {
-      if (member !== box && member.active) {
-        currentScene.tweens.add({
-          targets: member,
-          x: member.x + direction * BOX_VISUAL_SIZE,
-          duration: 180,
-          ease: 'Linear',
-          onUpdate: () => { if (member.body) member.body.reset(member.x, member.y); }
-        });
-      }
-    }
-  }
+    document.getElementById('boxGroundValue').innerText = Math.round(boxGroundY);
+    canvas.style.transform = `translate(0, ${clamped > boxGroundY ? '2px' : '-2px'})`;
+    setTimeout(() => { canvas.style.transform = ''; }, 100);
 }
 
-function onPlayerTouchBox(playerObj, box) {
-  if (isGameOver || isPaused || showMenu || isExploding) return;
-  if (activePushedBox) return;
-  
-  const leftPressed = (currentScene.cursors && currentScene.cursors.left.isDown) || touchLeft;
-  const rightPressed = (currentScene.cursors && currentScene.cursors.right.isDown) || touchRight;
-  
-  let dir = 0;
-  if (leftPressed) dir = -1;
-  else if (rightPressed) dir = 1;
-  else return;
-  
-  const boxIsToRight = (box.x > playerObj.x);
-  if ((dir === 1 && !boxIsToRight) || (dir === -1 && boxIsToRight)) return;
-  
-  startPushBox(box, dir);
+// Регулировка высоты стояния на ящике
+function updateStandOffset(delta) {
+    let newOffset = standOnBoxOffset + delta;
+    newOffset = Math.min(30, Math.max(-30, newOffset));
+    if (standOnBoxOffset === newOffset) return;
+    standOnBoxOffset = newOffset;
+    document.getElementById('standOffsetValue').innerText = standOnBoxOffset;
+    canvas.style.transform = `scale(1.01)`;
+    setTimeout(() => { canvas.style.transform = ''; }, 100);
 }
 
-// ========== ВЗРЫВ ==========
-function lowerAllBoxesAboveY(thresholdY) {
-  const allBoxes = boxes.getChildren().filter(b => b.active);
-  const toLower = allBoxes.filter(b => b.y < thresholdY);
-  for (let box of toLower) {
-    box.y += BOX_VISUAL_SIZE;
-    if (box.body) {
-      box.body.reset(box.x, box.y);
-      box.body.setVelocityY(0);
-    }
-  }
-}
+function playerGroundUp() { if (gameRunning && !gamePaused) updatePlayerGround(playerGroundY - 5); }
+function playerGroundDown() { if (gameRunning && !gamePaused) updatePlayerGround(playerGroundY + 5); }
+function boxGroundUp() { if (gameRunning && !gamePaused) updateBoxGround(boxGroundY - 5); }
+function boxGroundDown() { if (gameRunning && !gamePaused) updateBoxGround(boxGroundY + 5); }
+function standOffsetUp() { if (gameRunning && !gamePaused) updateStandOffset(2); }
+function standOffsetDown() { if (gameRunning && !gamePaused) updateStandOffset(-2); }
 
-function explodeRowAndLower(rowY, boxesInRow) {
-  if (isExploding) return;
-  isExploding = true;
-  const toDestroy = boxesInRow.filter(b => b && b.active);
-  for (let box of toDestroy) {
-    for (let i=0;i<15;i++) {
-      let angle = Math.random() * Math.PI * 2, speed = 60 + Math.random() * 120;
-      let vx = Math.cos(angle) * speed, vy = Math.sin(angle) * speed - 60;
-      let part = currentScene.add.rectangle(box.x+(Math.random()-0.5)*25, box.y+(Math.random()-0.5)*25, 4,4, 0xff6600,0.8);
-      currentScene.tweens.add({ targets: part, x: part.x+vx*0.15, y: part.y+vy*0.15, alpha:0, scale:0, duration:400, onComplete:()=>{ if(part) part.destroy(); } });
+// ========== СИНХРОНИЗАЦИЯ ВСЕХ ВЫСОТ ==========
+function syncAllHeights() {
+    if (!gameRunning) return;
+    
+    const allBoxes = [...boxes];
+    stacks.clear();
+    for (let box of allBoxes) {
+        const key = getStackKey(box.x);
+        if (!stacks.has(key)) stacks.set(key, []);
+        stacks.get(key).push(box);
     }
-  }
-  for (let box of toDestroy) {
-    if (box.active) {
-      if (box.body) box.body.setEnable(false);
-      if (boxGroupMap.has(box)) boxGroupMap.delete(box);
-      if (boxDebugRects.has(box)) { boxDebugRects.get(box).destroy(); boxDebugRects.delete(box); }
-      box.destroy();
-    }
-  }
-  const addScore = toDestroy.length * 50;
-  score += addScore;
-  if (scoreText) scoreText.setText(score);
-  document.getElementById('scoreBoard').innerHTML = `ОЧКИ: ${score}`;
-  if (toDestroy.length > 0) lowerAllBoxesAboveY(rowY);
-  if (currentScene) currentScene.cameras.main.shake(80, 0.01);
-  const msg = currentScene.add.text(400, 150, `🔥 ВЗРЫВ! +${addScore}`, 
-    { fontSize: '16px', fill: '#ffaa00', fontWeight: 'bold', backgroundColor: '#000000aa', padding: { x: 10, y: 5 } });
-  msg.setOrigin(0.5); msg.setDepth(2000);
-  currentScene.time.delayedCall(1200, () => msg.destroy());
-  currentScene.time.delayedCall(80, () => {
-    rebuildAllGroups();
-    isExploding = false;
-    currentScene.time.delayedCall(150, () => checkHorizontalLines(), [], currentScene);
-  }, [], currentScene);
-}
-
-function rebuildAllGroups() {
-  const allBoxes = boxes.getChildren().filter(b => b.active);
-  boxGroupMap.clear();
-  for (let box of allBoxes) {
-    boxGroupMap.set(box, new Set([box]));
-    if (box.body) { box.body.setAllowGravity(false); box.body.setImmovable(true); }
-    if (Math.abs(box.y - BOX_CORRECT_Y) > 2) box.y = BOX_CORRECT_Y;
-  }
-  for (let i = 0; i < allBoxes.length; i++) {
-    for (let j = i+1; j < allBoxes.length; j++) {
-      const a = allBoxes[i], b = allBoxes[j];
-      const dx = Math.abs(a.x - b.x), dy = Math.abs(a.y - b.y);
-      if (dx < BOX_VISUAL_SIZE - 2 && dy < BOX_VISUAL_SIZE - 2) {
-        const groupA = boxGroupMap.get(a), groupB = boxGroupMap.get(b);
-        if (groupA !== groupB) {
-          for (let b2 of groupB) { groupA.add(b2); boxGroupMap.set(b2, groupA); }
+    for (let [key, stack] of stacks.entries()) {
+        stack.sort((a,b) => a.y - b.y);
+        for (let i = 0; i < stack.length; i++) {
+            stack[i].y = getBoxBaseY() - i * BOX_SIZE;
         }
-      }
     }
-  }
-  const processed = new Set();
-  for (let box of allBoxes) {
-    const grp = boxGroupMap.get(box);
-    if (!processed.has(grp)) { processed.add(grp); stabilizeVerticalGroup(grp); }
-  }
+    
+    let standingOnBox = false;
+    const feetY = playerY + PLAYER_HALF_HEIGHT;
+    for (let box of boxes) {
+        const boxTop = box.y - BOX_SIZE/2;
+        const boxLeft = box.x - BOX_SIZE/2;
+        const boxRight = box.x + BOX_SIZE/2;
+        if (playerX + PLAYER_HALF_WIDTH > boxLeft && playerX - PLAYER_HALF_WIDTH < boxRight) {
+            if (Math.abs(feetY - boxTop) < 15) {
+                playerY = boxTop - standOnBoxOffset - PLAYER_HALF_HEIGHT;
+                playerVy = 0;
+                grounded = true;
+                standingOnBox = true;
+                break;
+            }
+        }
+    }
+    
+    if (!standingOnBox) {
+        if (playerY + PLAYER_HALF_HEIGHT > playerGroundY) {
+            playerY = playerGroundY - PLAYER_HALF_HEIGHT;
+            playerVy = 0;
+            grounded = true;
+        }
+    }
+    
+    document.getElementById('playerGroundValue').innerText = Math.round(playerGroundY);
+    document.getElementById('boxGroundValue').innerText = Math.round(boxGroundY);
+    document.getElementById('standOffsetValue').innerText = standOnBoxOffset;
+    
+    showToast(`✅ Синхронизировано: ПОЛ=${playerGroundY} ЯЩ=${boxGroundY} СМЕЩ=${standOnBoxOffset}`);
+}
+
+// ========== СОХРАНЕНИЕ В КОД ==========
+function saveToCode() {
+    const configCode = `// ===== СОХРАНЁННЫЕ НАСТРОЙКИ ВЫСОТ =====
+const SAVED_PLAYER_GROUND_Y = ${playerGroundY};
+const SAVED_BOX_GROUND_Y = ${boxGroundY};
+const SAVED_STAND_OFFSET = ${standOnBoxOffset};
+// =============================================`;
+
+    navigator.clipboard.writeText(configCode).then(() => {
+        showToast(`📋 Настройки скопированы! ПОЛ=${playerGroundY} ЯЩ=${boxGroundY} СМЕЩ=${standOnBoxOffset}`, true);
+        console.log(configCode);
+    }).catch(() => {
+        alert(`Скопируйте настройки вручную:\n${configCode}`);
+        showToast(`⚠️ Настройки в консоли (F12)`, false);
+    });
+}
+
+// ========== ЗАГРУЗКА ИЗОБРАЖЕНИЙ ==========
+function loadAssets(callback) {
+    let loaded = 0;
+    const total = Object.keys(imageList).length;
+    for (let [key, src] of Object.entries(imageList)) {
+        const img = new Image();
+        img.onload = () => { loaded++; if (loaded===total) { assetsLoaded=true; callback(); } };
+        img.onerror = () => { console.warn(`Не загружено ${src}`); loaded++; if (loaded===total) { assetsLoaded=true; callback(); } };
+        img.src = src;
+        images[key] = img;
+    }
+}
+
+function getStackKey(x) { return Math.round(x / BOX_SIZE) * BOX_SIZE; }
+
+function addToStack(box) {
+    const key = getStackKey(box.x);
+    if (!stacks.has(key)) stacks.set(key, []);
+    const stack = stacks.get(key);
+    if (!stack.includes(box)) stack.push(box);
+    stack.sort((a,b) => a.y - b.y);
+    for (let i=0; i<stack.length; i++) stack[i].y = getBoxBaseY() - i*BOX_SIZE;
+}
+
+function removeFromStack(box) {
+    const key = getStackKey(box.x);
+    if (stacks.has(key)) {
+        const stack = stacks.get(key);
+        const idx = stack.indexOf(box);
+        if (idx !== -1) stack.splice(idx,1);
+        if (stack.length===0) stacks.delete(key);
+        else for (let i=0; i<stack.length; i++) stack[i].y = getBoxBaseY() - i*BOX_SIZE;
+    }
+}
+
+function getBoxBelow(x, y) {
+    for (let box of boxes) {
+        if (Math.abs(box.x - x) < BOX_SIZE-2) {
+            const boxTop = box.y - BOX_SIZE/2;
+            if (Math.abs(boxTop - (y + PLAYER_HEIGHT)) < 10) return box;
+        }
+    }
+    return null;
+}
+
+function applyGravityToBox(box, onComplete) {
+    let targetY = box.y;
+    let below = getBoxBelow(box.x, box.y);
+    if (below) targetY = below.y - BOX_SIZE;
+    else targetY = getBoxBaseY();
+    if (targetY === box.y) { if (onComplete) onComplete(); return; }
+    const startY = box.y;
+    const duration = Math.min(300, Math.abs(targetY-startY)*2);
+    const startTime = performance.now();
+    function animate(now) {
+        const elapsed = now - startTime;
+        let t = Math.min(1, elapsed/duration);
+        t = Math.sin(t*Math.PI/2);
+        box.y = startY + (targetY-startY)*t;
+        if (t<1) requestAnimationFrame(animate);
+        else {
+            box.y = targetY;
+            removeFromStack(box);
+            addToStack(box);
+            if (onComplete) onComplete();
+            checkHorizontalLines();
+        }
+    }
+    requestAnimationFrame(animate);
+}
+
+function tryPushBox(box, direction) {
+    if (pushCooldown || exploding) return false;
+    const playerBottom = playerY + PLAYER_HEIGHT;
+    const boxTop = box.y - BOX_SIZE/2;
+    if (Math.abs(playerBottom - boxTop) > 8) return false;
+    const newX = box.x + direction * BOX_SIZE;
+    if (newX < leftBound+BOX_SIZE/2 || newX > rightBound-BOX_SIZE/2) return false;
+    for (let other of boxes) {
+        if (other===box) continue;
+        if (Math.abs(other.x - newX) < BOX_SIZE-2 && Math.abs(other.y - box.y) < BOX_SIZE/2) return false;
+    }
+    pushCooldown = true;
+    removeFromStack(box);
+    box.x = newX;
+    addToStack(box);
+    applyGravityToBox(box, () => { pushCooldown = false; });
+    box.tint = '#aaffcc';
+    setTimeout(() => { if (box.active) box.tint = null; }, 150);
+    return true;
 }
 
 function checkHorizontalLines() {
-  if (isExploding) return false;
-  const allBoxes = boxes.getChildren().filter(b => b.active);
-  if (allBoxes.length < WIN_LINE_LENGTH) return false;
-  const rowsByY = new Map();
-  const toleranceY = 8;
-  for (let box of allBoxes) {
-    let found = false;
-    for (let [yKey, list] of rowsByY.entries()) {
-      if (Math.abs(box.y - yKey) <= toleranceY) { list.push(box); found = true; break; }
+    if (exploding) return false;
+    const allBoxes = [];
+    for (let s of stacks.values()) allBoxes.push(...s);
+    if (allBoxes.length < WIN_LINE) return false;
+    const rows = new Map();
+    for (let b of allBoxes) {
+        let found = false;
+        for (let [y,list] of rows) {
+            if (Math.abs(b.y - y) <= 5) { list.push(b); found=true; break; }
+        }
+        if (!found) rows.set(b.y, [b]);
     }
-    if (!found) rowsByY.set(box.y, [box]);
-  }
-  const rowsToExplode = [];
-  for (let [y, rowBoxes] of rowsByY.entries()) {
-    if (rowBoxes.length >= WIN_LINE_LENGTH) {
-      rowBoxes.sort((a,b)=>a.x-b.x);
-      let chain = [rowBoxes[0]];
-      for (let i=1;i<rowBoxes.length;i++) {
-        if (rowBoxes[i].x - rowBoxes[i-1].x <= BOX_VISUAL_SIZE+3) chain.push(rowBoxes[i]);
-        else { if (chain.length >= WIN_LINE_LENGTH) rowsToExplode.push({y, boxes:[...chain]}); chain=[rowBoxes[i]]; }
-      }
-      if (chain.length >= WIN_LINE_LENGTH) rowsToExplode.push({y, boxes:[...chain]});
+    const toExplode = [];
+    for (let [y,list] of rows) {
+        if (list.length >= WIN_LINE) {
+            list.sort((a,b)=>a.x-b.x);
+            let chain = [list[0]];
+            for (let i=1;i<list.length;i++) {
+                if (list[i].x - list[i-1].x <= BOX_SIZE+2) chain.push(list[i]);
+                else { if (chain.length>=WIN_LINE) toExplode.push(chain.slice()); chain=[list[i]]; }
+            }
+            if (chain.length>=WIN_LINE) toExplode.push(chain);
+        }
     }
-  }
-  if (rowsToExplode.length===0) return false;
-  for (let row of rowsToExplode) for (let box of row.boxes) if(box.active) box.setTint(0xffaa44);
-  currentScene.time.delayedCall(50, () => { for (let row of rowsToExplode) explodeRowAndLower(row.y, row.boxes); });
-  return true;
+    if (toExplode.length===0) return false;
+    exploding = true;
+    let destroyed = 0;
+    for (let row of toExplode) {
+        destroyed += row.length;
+        for (let b of row) {
+            if (b.active) {
+                addExplosion(b.x, b.y);
+                const idx = boxes.indexOf(b);
+                if (idx!==-1) boxes.splice(idx,1);
+                removeFromStack(b);
+            }
+        }
+    }
+    score += destroyed*50;
+    document.getElementById('scoreBoard').innerHTML = `ОЧКИ: ${score}`;
+    canvas.style.transform = `translate(${Math.sin(Date.now()*0.05)*3}px, ${Math.cos(Date.now()*0.07)*2}px)`;
+    setTimeout(() => { canvas.style.transform = ''; exploding = false; }, 500);
+    return true;
 }
 
-function gameOverWithReason(reason) {
-  if (isGameOver) return;
-  isGameOver = true;
-  if (craneSpawnTimer) craneSpawnTimer.remove();
-  if (currentScene) currentScene.physics.world.pause();
-  resetMovementFlags();
-  menuText.setVisible(true);
-  menuText.setText(`💀 ИГРА ОКОНЧЕНА 💀\n${reason}\nОчки: ${score}\nМЕНЮ → НАЧАТЬ`);
-  showMenu = true;
+// ========== ЭФФЕКТЫ ==========
+function addExplosion(x,y) {
+    for (let i=0;i<20;i++) {
+        const angle = Math.random()*Math.PI*2;
+        const speed = 2+Math.random()*5;
+        particles.push({
+            x,y, vx:Math.cos(angle)*speed, vy:Math.sin(angle)*speed-2,
+            life:0.8+Math.random()*0.5, size:3+Math.random()*4,
+            color:`hsl(${30+Math.random()*30},80%,60%)`
+        });
+    }
+    ctx.save();
+    ctx.globalCompositeOperation='lighter';
+    ctx.fillStyle='#ffaa44';
+    ctx.beginPath(); ctx.arc(x,y,15,0,Math.PI*2); ctx.fill();
+    ctx.restore();
 }
-function gameOver() { if (!godMode) gameOverWithReason("Ящик упал!"); }
-
-// ========== ФАЗЕР ==========
-function preload() {
-  this.load.image('bg', 'bg.png');
-  this.load.image('run1', 'run1.png');
-  this.load.image('run2', 'run2.png');
-  this.load.image('run3', 'run3.png');
-  this.load.image('run4', 'run4.png');
-  this.load.image('title', 'title.png');
-  this.load.image('box', 'box.png');
+function updateParticles() {
+    for (let i=particles.length-1;i>=0;i--) {
+        let p=particles[i];
+        p.x+=p.vx; p.y+=p.vy; p.vy+=0.2; p.life-=0.02;
+        if (p.life<=0 || p.y>H+50) particles.splice(i,1);
+    }
 }
-
-function create() {
-  currentScene = this; loadMarkers();
-  titleScreen = this.add.image(400,200,'title'); titleScreen.setDisplaySize(800,400).setDepth(3000);
-  clickArea = this.add.rectangle(400,350,300,60,0x000000,0).setInteractive({useHandCursor:true}).setDepth(3001);
-  this.tweens.add({ targets: clickArea, scale:{from:1,to:1.02}, duration:800, yoyo:true, repeat:-1 });
-  const startGameFunc = () => { if(!gameStarted){ gameStarted=true; titleScreen.destroy(); clickArea.destroy(); document.getElementById('topPanel').style.display='flex'; document.getElementById('touchPanel').style.display='flex'; resetMovementFlags(); initGameScene.call(this); } };
-  clickArea.on('pointerdown', startGameFunc); this.input.on('pointerdown', (p)=>{ if(!gameStarted) startGameFunc(); });
-  setupUIButtons.call(this); setupTouchControls();
+function drawParticles() {
+    for (let p of particles) {
+        ctx.fillStyle=p.color;
+        ctx.globalAlpha=Math.min(1,p.life*1.5);
+        ctx.fillRect(p.x-p.size/2,p.y-p.size/2,p.size,p.size);
+    }
+    ctx.globalAlpha=1;
 }
-
-function initGameScene() {
-  isGameOver=false; isPaused=false; showMenu=false; isExploding=false; score=0; boxGroupMap.clear(); activePushedBox=null;
-  if(scoreText) scoreText.setText('0'); document.getElementById('scoreBoard').innerHTML='ОЧКИ: 0'; setSpeed(1);
-  this.bg = this.add.image(400,200,'bg'); this.bg.displayWidth=800; this.bg.displayHeight=400;
-  this.playerGround = this.physics.add.staticGroup(); this.playerGround.create(400,PLAYER_GROUND_Y+8,800,20).setDisplaySize(800,20).refreshBody().visible=false;
-  this.boxGround = this.physics.add.staticGroup(); this.boxGround.create(400,BOX_GROUND_Y+8,800,24).setDisplaySize(800,24).refreshBody().visible=false;
-  
-  boxes = this.physics.add.group({
-    collideWorldBounds: false,
-    bounceX: 0, bounceY: 0, dragX: 1, gravityY: 0, allowGravity: false
-  });
-  
-  const startX = markers.length>0? markers[0].x+BOX_VISUAL_SIZE/2 : 200;
-  
-  player = this.physics.add.sprite(startX, PLAYER_SPRITE_Y, 'run1');
-  player.setScale(PLAYER_SCALE_FACTOR);
-  player.setCollideWorldBounds(false);
-  player.body.setSize(COLLIDER_WIDTH, COLLIDER_HEIGHT, COLLIDER_OFFSET_X, COLLIDER_OFFSET_Y);
-  player.body.setMaxVelocity(300 * currentSpeed, 550);
-  player.body.setDragX(0.96);
-  
-  playerDebugRect = this.add.rectangle(player.x + COLLIDER_OFFSET_X, player.y + COLLIDER_OFFSET_Y, COLLIDER_WIDTH, COLLIDER_HEIGHT, 0x00ff00, 0.3);
-  playerDebugRect.setStrokeStyle(2, 0x00ff00, 1);
-  playerDebugRect.setDepth(999);
-  playerDebugRect.setVisible(debugEnabled);
-  
-  this.physics.add.collider(player, this.playerGround);
-  this.physics.add.collider(boxes, this.boxGround);
-  this.physics.add.collider(boxes, boxes, handleBoxCollision);
-  this.physics.add.collider(player, boxes, onPlayerTouchBox, null, this);
-  
-  this.physics.add.collider(player, boxes, (p,box)=>{ 
-    const pBottom = p.y + COLLIDER_OFFSET_Y + COLLIDER_HEIGHT; 
-    const bTop = box.y - BOX_VISUAL_SIZE/2; 
-    if(pBottom >= bTop - 5 && pBottom <= bTop + 12 && p.body.velocity.y >= 0){ 
-      p.y = bTop - COLLIDER_HEIGHT - COLLIDER_OFFSET_Y; 
-      p.body.setVelocityY(0); 
-      standingOnBox = true; 
-    } 
-  });
-  
-  rebuildMarkers();
-  this.anims.create({ key:'run', frames:[{key:'run1'},{key:'run2'},{key:'run3'},{key:'run4'}], frameRate:12, repeat:-1 });
-  scoreText = this.add.text(670, 12, '0', { fontSize: '22px', fill: '#ffdd88', fontFamily: 'monospace', fontWeight: 'bold' });
-  scoreText.setDepth(1000);
-  menuText = this.add.text(400,200,'',{fontSize:'16px',fill:'#fff',backgroundColor:'#000',padding:{x:15,y:15}}).setOrigin(0.5).setDepth(2000).setVisible(false);
-  this.cursors = this.input.keyboard.createCursorKeys();
-  craneSpawnTimer = this.time.addEvent({ delay: baseSpawnDelay, callback:()=>spawnCrane.call(this), callbackScope:this, loop:true });
-  updateBoxDebugRects();
+function drawBackground() {
+    if (images.bg && images.bg.complete) ctx.drawImage(images.bg,0,0,W,H);
+    else { 
+        ctx.fillStyle='#2a4a5a'; ctx.fillRect(0,0,W,H);
+        ctx.fillStyle='#3a6a5a20'; 
+        ctx.fillRect(0, playerGroundY-2, W, 2);
+    }
 }
-
-function spawnCrane() {
-  if(isGameOver||isPaused||showMenu||!gameStarted||isExploding) return;
-  if(!markers.length) return;
-  const targetX = getRandomMarkerX();
-  if(wouldExceedHeight(null,targetX)){ gameOverWithReason(`ВЫСОТА ${MAX_STACK_HEIGHT}!`); return; }
-  const crane = this.add.graphics(); crane.lineStyle(3,0x888888); crane.moveTo(targetX,0); crane.lineTo(targetX,35); crane.fillStyle(0x666666); crane.fillCircle(targetX,35,6); crane.setDepth(900);
-  this.time.delayedCall(600,()=>{
-    crane.destroy(); if(isGameOver||isPaused||showMenu||isExploding) return;
-    if(wouldExceedHeight(null,targetX)){ gameOverWithReason(`ВЫСОТА ${MAX_STACK_HEIGHT}!`); return; }
-    const box = boxes.create(targetX,20,'box');
-    box.setScale(BOX_VISUAL_SCALE);
-    box.body.setSize(BOX_VISUAL_SIZE, BOX_VISUAL_SIZE, 0, 0);
-    box.setVelocityY(0);
-    box.setTint(0xccaa66);
-    box.body.setDragX(1);
-    box.body.setAllowGravity(false);
-    box.body.setImmovable(true);
-    box.y = BOX_CORRECT_Y;
-    if(box.body) box.body.reset(box.x, box.y);
-    boxGroupMap.set(box,new Set([box]));
-    if(debugEnabled) updateBoxDebugRects();
-    this.time.delayedCall(100,()=>{ if(box.active){ stabilizeVerticalGroup(getGroup(box)); checkStackHeight(); checkHorizontalLines(); if(debugEnabled) updateBoxDebugRects(); } });
-    let deathCheck=false;
-    const check=()=>{ if(!deathCheck && box.active && player.active && !godMode){ 
-      const pt = player.y + COLLIDER_OFFSET_Y; 
-      const bb = box.y + BOX_VISUAL_SIZE/2; 
-      if(Math.abs(box.x - player.x) < COLLIDER_WIDTH/2 + BOX_VISUAL_SIZE/2 - 5){ 
-        deathCheck=true; gameOver(); 
-      } 
-    } };
-    this.time.delayedCall(100,check);
-  },[],this);
+function drawMarkers() {
+    if (!markersVisible) return;
+    for (let m of markers) {
+        ctx.fillStyle='rgba(255,0,0,0.25)'; ctx.fillRect(m.x,0,BOX_SIZE,H);
+        ctx.strokeStyle='rgba(255,0,0,0.8)'; ctx.lineWidth=1; ctx.strokeRect(m.x,0,BOX_SIZE,H);
+        ctx.fillStyle='#ff8888'; ctx.font='8px monospace'; ctx.fillText(`${Math.round(m.x)}`, m.x+BOX_SIZE/2-12,20);
+    }
+}
+function drawBoxes() {
+    for (let box of boxes) {
+        if (!box.active) continue;
+        if (images.box && images.box.complete) ctx.drawImage(images.box, box.x-BOX_SIZE/2, box.y-BOX_SIZE/2, BOX_SIZE, BOX_SIZE);
+        else {
+            ctx.fillStyle=box.tint||'#ccaa66'; ctx.fillRect(box.x-BOX_SIZE/2,box.y-BOX_SIZE/2,BOX_SIZE,BOX_SIZE);
+            ctx.strokeStyle='#886633'; ctx.lineWidth=1; ctx.strokeRect(box.x-BOX_SIZE/2,box.y-BOX_SIZE/2,BOX_SIZE,BOX_SIZE);
+        }
+        if (box.tint && box.tint!=='#ccaa66') {
+            ctx.globalAlpha=0.5; ctx.fillStyle=box.tint; ctx.fillRect(box.x-BOX_SIZE/2,box.y-BOX_SIZE/2,BOX_SIZE,BOX_SIZE);
+            ctx.globalAlpha=1;
+        }
+    }
+}
+function drawPlayer() {
+    let frame='run1';
+    if (grounded && (leftPressed||rightPressed)) frame=`run${Math.floor(Date.now()/100)%4+1}`;
+    const img=images[frame];
+    if (img && img.complete) {
+        const w=img.width*0.24, h=img.height*0.24;
+        ctx.save();
+        if (lastDir==='left') { ctx.translate(playerX,playerY); ctx.scale(-1,1); ctx.drawImage(img,-w/2,-h/2,w,h); }
+        else ctx.drawImage(img,playerX-w/2,playerY-h/2,w,h);
+        ctx.restore();
+    } else {
+        ctx.fillStyle='#ffaa66';
+        ctx.beginPath(); ctx.ellipse(playerX, playerY, PLAYER_HALF_WIDTH, PLAYER_HALF_HEIGHT, 0, 0, Math.PI*2);
+        ctx.fill();
+        ctx.fillStyle='#000';
+        ctx.beginPath(); ctx.arc(playerX-PLAYER_HALF_WIDTH*0.6, playerY-PLAYER_HALF_HEIGHT*0.3, 3, 0, Math.PI*2);
+        ctx.fill();
+        ctx.beginPath(); ctx.arc(playerX+PLAYER_HALF_WIDTH*0.6, playerY-PLAYER_HALF_HEIGHT*0.3, 3, 0, Math.PI*2);
+        ctx.fill();
+        ctx.fillStyle=lastDir==='right'?'#ffaa44':'#ff8844';
+        ctx.beginPath(); ctx.moveTo(playerX+(lastDir==='right'?PLAYER_HALF_WIDTH*0.7:-PLAYER_HALF_WIDTH*0.7), playerY);
+        ctx.lineTo(playerX+(lastDir==='right'?PLAYER_HALF_WIDTH*1.2:-PLAYER_HALF_WIDTH*1.2), playerY-5);
+        ctx.lineTo(playerX+(lastDir==='right'?PLAYER_HALF_WIDTH*1.2:-PLAYER_HALF_WIDTH*1.2), playerY+5);
+        ctx.fill();
+    }
+}
+function drawUI() {
+    ctx.font='bold 22px monospace'; ctx.fillStyle='#ffdd88'; ctx.fillText(`ОЧКИ: ${score}`, W-130,30);
+    ctx.font='9px monospace'; ctx.fillStyle='#aaffdd'; 
+    ctx.fillText(`ПОЛ:${Math.round(playerGroundY)}`, W-130,52);
+    ctx.fillText(`ЯЩ:${Math.round(boxGroundY)}`, W-130,64);
+    ctx.fillText(`НА ЯЩ:${standOnBoxOffset>0?'+':''}${standOnBoxOffset}`, W-130,76);
 }
 
-function setupUIButtons() {
-  document.getElementById('btnPause').onclick = ()=>{ if(!isGameOver && !showMenu && gameStarted){ isPaused=!isPaused; if(isPaused){ this.physics.world.pause(); resetMovementFlags(); } else this.physics.world.resume(); } };
-  document.getElementById('btnMenu').onclick = ()=>{ if(isGameOver) this.scene.restart(); else { showMenu=!showMenu; if(showMenu){ this.physics.world.pause(); resetMovementFlags(); menuText.setVisible(true); menuText.setText('СКЛАДСКОЙ ГРУЗЧИК\nТолкай ящики в красные зоны!\n16+ в ряду = ВЗРЫВ!\n🛡️ БЕССМЕРТИЕ\n⚡ УСКОРЕНИЕ'); } else { menuText.setVisible(false); if(!isPaused && !isGameOver) this.physics.world.resume(); } } };
-  document.getElementById('btnDebug').onclick = ()=>toggleDebug();
-  document.getElementById('btnGodMode').onclick = ()=>toggleGodMode();
-  document.getElementById('btnToggleMarkers').onclick = ()=>toggleMarkers();
-  document.getElementById('btnSpeed1').onclick = ()=>setSpeed(1); document.getElementById('btnSpeed2').onclick = ()=>setSpeed(2);
-  document.getElementById('btnSpeed4').onclick = ()=>setSpeed(4); document.getElementById('btnSpeed8').onclick = ()=>setSpeed(8);
+// ========== ИНИЦИАЛИЗАЦИЯ МАРКЕРОВ ==========
+function initMarkers() {
+    markers = DEFAULT_MARKERS.map(x=>({x}));
+    updateBounds();
+}
+function updateBounds() {
+    if (!markers.length) { leftBound=0; rightBound=800; return; }
+    const xs = markers.map(m=>m.x).sort((a,b)=>a-b);
+    leftBound = xs[0];
+    rightBound = xs[xs.length-1] + BOX_SIZE;
+}
+function getRandomMarkerX() { return markers.length ? markers[Math.floor(Math.random()*markers.length)].x : 400; }
+
+// ========== СПАВН ЯЩИКОВ ==========
+function spawnBox() {
+    if (!gameRunning || gamePaused || exploding) return;
+    const targetX = getRandomMarkerX();
+    const key = getStackKey(targetX + BOX_SIZE/2);
+    const stackHeight = stacks.has(key) ? stacks.get(key).length : 0;
+    if (stackHeight >= MAX_STACK) { gameOver(`Высота ${MAX_STACK}!`); return; }
+    const targetY = getBoxBaseY() - stackHeight * BOX_SIZE;
+    const box = { x: targetX + BOX_SIZE/2, y: 20, active: true, tint: null };
+    boxes.push(box);
+    const startY = box.y;
+    const duration = Math.min(400, Math.abs(targetY-startY)*2);
+    const startTime = performance.now();
+    function animate(now) {
+        const elapsed = now - startTime;
+        let t = Math.min(1, elapsed/duration);
+        t = t*t;
+        box.y = startY + (targetY-startY)*t;
+        if (t<1) requestAnimationFrame(animate);
+        else { box.y = targetY; addToStack(box); checkHorizontalLines(); }
+    }
+    requestAnimationFrame(animate);
 }
 
-function setupTouchControls() {
-  const btnLeft = document.getElementById('btnLeft');
-  const btnRight = document.getElementById('btnRight');
-  const btnJump = document.getElementById('btnJump');
-  
-  const onLeftStart = (e) => { if(e) { e.preventDefault(); } touchLeft = true; };
-  const onLeftEnd = (e) => { if(e) { e.preventDefault(); } touchLeft = false; };
-  const onRightStart = (e) => { if(e) { e.preventDefault(); } touchRight = true; };
-  const onRightEnd = (e) => { if(e) { e.preventDefault(); } touchRight = false; };
-  const onJump = (e) => { 
-    if(e) { e.preventDefault(); } 
-    if(!isGameOver && !isPaused && !showMenu && gameStarted && (player.body.blocked.down || standingOnBox) && !jumpCooldown){ 
-      player.setVelocityY(getJumpPower()); 
-      jumpCooldown = true; 
-      standingOnBox = false; 
-      currentScene.time.delayedCall(280, () => { jumpCooldown = false; }); 
-    } 
-  };
-  
-  btnLeft.addEventListener('touchstart', onLeftStart, { passive: false });
-  btnLeft.addEventListener('touchend', onLeftEnd, { passive: false });
-  btnLeft.addEventListener('touchcancel', onLeftEnd, { passive: false });
-  btnLeft.addEventListener('mousedown', onLeftStart);
-  btnLeft.addEventListener('mouseup', onLeftEnd);
-  btnLeft.addEventListener('mouseleave', onLeftEnd);
-  
-  btnRight.addEventListener('touchstart', onRightStart, { passive: false });
-  btnRight.addEventListener('touchend', onRightEnd, { passive: false });
-  btnRight.addEventListener('touchcancel', onRightEnd, { passive: false });
-  btnRight.addEventListener('mousedown', onRightStart);
-  btnRight.addEventListener('mouseup', onRightEnd);
-  btnRight.addEventListener('mouseleave', onRightEnd);
-  
-  btnJump.addEventListener('touchstart', onJump, { passive: false });
-  btnJump.addEventListener('touchend', (e) => { if(e) e.preventDefault(); });
-  btnJump.addEventListener('click', onJump);
-  btnJump.addEventListener('mousedown', onJump);
+function gameOver(reason) {
+    if (!gameRunning) return;
+    gameRunning = false;
+    if (spawnInterval) clearInterval(spawnInterval);
+    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    alert(`Игра окончена!\n${reason}\nОчки: ${score}`);
+    document.getElementById('titleScreen').style.display = 'flex';
+    document.getElementById('ui').style.display = 'none';
+    document.getElementById('touchPanel').style.display = 'none';
 }
 
-function update() {
-  if(!gameStarted||showMenu||isGameOver||isPaused||isExploding) return;
-  let leftActive = (this.cursors.left.isDown || touchLeft);
-  let rightActive = (this.cursors.right.isDown || touchRight);
-  
-  let targetVelX = 0;
-  if(leftActive) targetVelX = -getPlayerSpeed();
-  if(rightActive) targetVelX = getPlayerSpeed();
-  player.setVelocityX(targetVelX);
-  
-  if(leftActive) lastDirection = 'left';
-  if(rightActive) lastDirection = 'right';
-  player.setFlipX(lastDirection === 'left');
-  
-  if(this.cursors.up.isDown && !jumpCooldown && (player.body.blocked.down || standingOnBox)){ 
-    player.setVelocityY(getJumpPower()); 
-    jumpCooldown = true; 
-    standingOnBox = false; 
-    this.time.delayedCall(280, () => { jumpCooldown = false; }); 
-  }
-  if(!player.body.blocked.down && player.body.velocity.y > 0) standingOnBox = false;
-  
-  enforceBoundary();
-  
-  if(playerDebugRect) playerDebugRect.setPosition(player.x + COLLIDER_OFFSET_X, player.y + COLLIDER_OFFSET_Y);
-  syncBoxDebugRects();
-  
-  if((leftActive||rightActive) && (player.body.blocked.down || standingOnBox)){ 
-    if(!player.anims.isPlaying) player.play('run'); 
-  } else { 
-    if(player.anims.isPlaying) player.stop(); 
-    if(!player.anims.isPlaying) player.setTexture('run1'); 
-    player.setFlipX(lastDirection === 'left'); 
-  }
+// ========== ПОЛНЫЙ РЕСТАРТ С СОХРАНЁННЫМИ НАСТРОЙКАМИ ==========
+function fullRestart() {
+    if (spawnInterval) clearInterval(spawnInterval);
+    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    
+    gameRunning = false;
+    gamePaused = false;
+    score = 0;
+    godMode = false;
+    leftPressed = false;
+    rightPressed = false;
+    boxes = [];
+    stacks.clear();
+    exploding = false;
+    pushCooldown = false;
+    particles = [];
+    
+    // ПРИМЕНЯЕМ СОХРАНЁННЫЕ НАСТРОЙКИ
+    playerGroundY = SAVED_PLAYER_GROUND_Y;
+    boxGroundY = SAVED_BOX_GROUND_Y;
+    standOnBoxOffset = SAVED_STAND_OFFSET;
+    
+    document.getElementById('playerGroundValue').innerText = playerGroundY;
+    document.getElementById('boxGroundValue').innerText = boxGroundY;
+    document.getElementById('standOffsetValue').innerText = standOnBoxOffset;
+    
+    playerX = markers.length ? markers[0].x + BOX_SIZE/2 : 200;
+    playerY = playerGroundY - PLAYER_HALF_HEIGHT;
+    playerVy = 0;
+    grounded = true;
+    jumpCd = false;
+    lastDir = 'right';
+    
+    document.getElementById('scoreBoard').innerHTML = 'ОЧКИ: 0';
+    document.getElementById('btnGodMode').classList.remove('active');
+    
+    gameRunning = true;
+    gamePaused = false;
+    
+    if (spawnInterval) clearInterval(spawnInterval);
+    spawnInterval = setInterval(() => spawnBox(), SPAWN_DELAY / currentSpeed);
+    
+    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    animationFrameId = requestAnimationFrame(gameLoop);
 }
+
+// ========== ОСНОВНОЙ ЦИКЛ ==========
+function gameLoop() {
+    if (!gameRunning || gamePaused) { 
+        animationFrameId = requestAnimationFrame(gameLoop); 
+        return; 
+    }
+
+    let moveLeft = leftPressed;
+    let moveRight = rightPressed;
+    
+    if (moveLeft && !moveRight) { playerX -= PLAYER_SPEED * currentSpeed; lastDir = 'left'; }
+    else if (moveRight && !moveLeft) { playerX += PLAYER_SPEED * currentSpeed; lastDir = 'right'; }
+
+    const playerLeft = playerX - PLAYER_HALF_WIDTH;
+    const playerRight = playerX + PLAYER_HALF_WIDTH;
+    for (let box of boxes) {
+        const boxLeft = box.x - BOX_SIZE/2;
+        const boxRight = box.x + BOX_SIZE/2;
+        const boxTop = box.y - BOX_SIZE/2;
+        const boxBottom = box.y + BOX_SIZE/2;
+        const verticalOverlap = (playerY - PLAYER_HALF_HEIGHT < boxBottom && playerY + PLAYER_HALF_HEIGHT > boxTop);
+        if (verticalOverlap) {
+            if (playerRight > boxLeft && playerLeft < boxLeft) {
+                playerX = boxLeft - PLAYER_HALF_WIDTH;
+            }
+            else if (playerLeft < boxRight && playerRight > boxRight) {
+                playerX = boxRight + PLAYER_HALF_WIDTH;
+            }
+        }
+    }
+
+    if (jumpRequested && grounded && !jumpCd) {
+        playerVy = JUMP_POWER * Math.sqrt(currentSpeed);
+        grounded = false;
+        jumpCd = true;
+        setTimeout(() => { jumpCd = false; }, 350);
+    }
+    jumpRequested = false;
+
+    if (!grounded) {
+        playerVy += GRAVITY * currentSpeed;
+        playerY += playerVy;
+    }
+
+    let platformY = null;
+    let feetY = playerY + PLAYER_HALF_HEIGHT;
+    for (let box of boxes) {
+        const boxTop = box.y - BOX_SIZE/2;
+        const boxLeft = box.x - BOX_SIZE/2;
+        const boxRight = box.x + BOX_SIZE/2;
+        if (playerX + PLAYER_HALF_WIDTH > boxLeft && playerX - PLAYER_HALF_WIDTH < boxRight) {
+            const targetStandY = boxTop - standOnBoxOffset;
+            if (feetY >= targetStandY - 5 && feetY <= targetStandY + 8 && playerVy >= 0) {
+                platformY = targetStandY;
+                break;
+            }
+        }
+    }
+
+    if (platformY !== null) {
+        playerY = platformY - PLAYER_HALF_HEIGHT;
+        playerVy = 0;
+        grounded = true;
+    } else {
+        if (playerY + PLAYER_HALF_HEIGHT >= playerGroundY) {
+            playerY = playerGroundY - PLAYER_HALF_HEIGHT;
+            playerVy = 0;
+            grounded = true;
+        } else {
+            grounded = false;
+        }
+    }
+
+    const minX = leftBound + PLAYER_HALF_WIDTH;
+    const maxX = rightBound - PLAYER_HALF_WIDTH;
+    playerX = Math.min(maxX, Math.max(minX, playerX));
+
+    if (!pushCooldown && !exploding && (moveLeft || moveRight)) {
+        const dir = moveLeft ? -1 : 1;
+        const playerFrontX = playerX + (dir === 1 ? PLAYER_HALF_WIDTH : -PLAYER_HALF_WIDTH);
+        const playerBottom = playerY + PLAYER_HALF_HEIGHT;
+        for (let box of boxes) {
+            const boxTop = box.y - BOX_SIZE/2;
+            if (Math.abs(box.x - playerFrontX) < BOX_SIZE/2 && Math.abs(boxTop - playerBottom) < 10) {
+                tryPushBox(box, dir);
+                break;
+            }
+        }
+    }
+
+    updateParticles();
+    drawBackground();
+    drawMarkers();
+    drawBoxes();
+    drawPlayer();
+    drawParticles();
+    drawUI();
+
+    animationFrameId = requestAnimationFrame(gameLoop);
+}
+
+let jumpRequested = false;
+function jump() { if (gameRunning && !gamePaused) jumpRequested = true; }
+
+// ========== ИНИЦИАЛИЗАЦИЯ ИГРЫ С СОХРАНЁННЫМИ НАСТРОЙКАМИ ==========
+function initGame() {
+    // ПРИМЕНЯЕМ СОХРАНЁННЫЕ НАСТРОЙКИ ПРИ СТАРТЕ
+    playerGroundY = SAVED_PLAYER_GROUND_Y;
+    boxGroundY = SAVED_BOX_GROUND_Y;
+    standOnBoxOffset = SAVED_STAND_OFFSET;
+    
+    document.getElementById('playerGroundValue').innerText = playerGroundY;
+    document.getElementById('boxGroundValue').innerText = boxGroundY;
+    document.getElementById('standOffsetValue').innerText = standOnBoxOffset;
+    
+    gameRunning = true;
+    gamePaused = false;
+    score = 0;
+    godMode = false;
+    leftPressed = false;
+    rightPressed = false;
+    playerX = markers.length ? markers[0].x + BOX_SIZE/2 : 200;
+    playerY = playerGroundY - PLAYER_HALF_HEIGHT;
+    playerVy = 0;
+    grounded = true;
+    jumpCd = false;
+    boxes = [];
+    stacks.clear();
+    exploding = false;
+    pushCooldown = false;
+    particles = [];
+    document.getElementById('scoreBoard').innerHTML = 'ОЧКИ: 0';
+    document.getElementById('btnGodMode').classList.remove('active');
+    if (spawnInterval) clearInterval(spawnInterval);
+    spawnInterval = setInterval(spawnBox, SPAWN_DELAY / currentSpeed);
+    document.getElementById('titleScreen').style.display = 'none';
+    document.getElementById('ui').style.display = 'flex';
+    document.getElementById('touchPanel').style.display = 'flex';
+    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    animationFrameId = requestAnimationFrame(gameLoop);
+    
+    showToast(`🎮 Игра запущена с настройками: ПОЛ=${playerGroundY} ЯЩ=${boxGroundY} СМЕЩ=${standOnBoxOffset}`, true);
+}
+
+// ========== УПРАВЛЕНИЕ ==========
+function setupControls() {
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowLeft') leftPressed = true;
+        if (e.key === 'ArrowRight') rightPressed = true;
+        if (e.key === 'ArrowUp') jump();
+        if (e.key === 'q' || e.key === 'Q') playerGroundUp();
+        if (e.key === 'w' || e.key === 'W') playerGroundDown();
+        if (e.key === 'a' || e.key === 'A') boxGroundUp();
+        if (e.key === 's' || e.key === 'S') boxGroundDown();
+        if (e.key === 'z' || e.key === 'Z') standOffsetUp();
+        if (e.key === 'x' || e.key === 'X') standOffsetDown();
+    });
+    window.addEventListener('keyup', (e) => {
+        if (e.key === 'ArrowLeft') leftPressed = false;
+        if (e.key === 'ArrowRight') rightPressed = false;
+    });
+
+    const leftBtn = document.getElementById('btnLeft');
+    const rightBtn = document.getElementById('btnRight');
+    const jumpBtn = document.getElementById('btnJump');
+    const setTouch = (btn, cb) => {
+        btn.addEventListener('touchstart', (e) => { e.preventDefault(); cb(true); });
+        btn.addEventListener('touchend', (e) => { e.preventDefault(); cb(false); });
+        btn.addEventListener('mousedown', () => cb(true));
+        btn.addEventListener('mouseup', () => cb(false));
+        btn.addEventListener('mouseleave', () => cb(false));
+    };
+    setTouch(leftBtn, (v) => leftPressed = v);
+    setTouch(rightBtn, (v) => rightPressed = v);
+    jumpBtn.addEventListener('touchstart', (e) => { e.preventDefault(); jump(); });
+    jumpBtn.addEventListener('mousedown', jump);
+
+    document.getElementById('btnPause').onclick = () => { gamePaused = !gamePaused; };
+    document.getElementById('btnMenu').onclick = () => {
+        gameRunning = false;
+        if (spawnInterval) clearInterval(spawnInterval);
+        if (animationFrameId) cancelAnimationFrame(animationFrameId);
+        document.getElementById('titleScreen').style.display = 'flex';
+        document.getElementById('ui').style.display = 'none';
+        document.getElementById('touchPanel').style.display = 'none';
+    };
+    
+    document.getElementById('btnRestartGame').onclick = () => { fullRestart(); };
+    document.getElementById('btnToggleMarkers').onclick = () => {
+        markersVisible = !markersVisible;
+        document.getElementById('btnToggleMarkers').classList.toggle('active');
+    };
+    document.getElementById('btnGodMode').onclick = () => {
+        godMode = !godMode;
+        document.getElementById('btnGodMode').classList.toggle('active');
+    };
+    
+    document.getElementById('btnPlayerGroundUp').onclick = () => playerGroundUp();
+    document.getElementById('btnPlayerGroundDown').onclick = () => playerGroundDown();
+    document.getElementById('btnBoxGroundUp').onclick = () => boxGroundUp();
+    document.getElementById('btnBoxGroundDown').onclick = () => boxGroundDown();
+    document.getElementById('btnStandOffsetUp').onclick = () => standOffsetUp();
+    document.getElementById('btnStandOffsetDown').onclick = () => standOffsetDown();
+    
+    document.getElementById('btnSyncHeights').onclick = () => syncAllHeights();
+    document.getElementById('btnSaveToCode').onclick = () => saveToCode();
+    
+    const speedBtns = {1:'btnSpeed1',2:'btnSpeed2',4:'btnSpeed4',8:'btnSpeed8'};
+    for (let [spd, id] of Object.entries(speedBtns)) {
+        document.getElementById(id).onclick = () => {
+            currentSpeed = Number(spd);
+            document.querySelectorAll('.speed-buttons button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            if (spawnInterval) {
+                clearInterval(spawnInterval);
+                spawnInterval = setInterval(() => spawnBox(), SPAWN_DELAY / currentSpeed);
+            }
+        };
+    }
+}
+
+// ========== ЗАПУСК ==========
+window.onload = () => {
+    canvas = document.getElementById('gameCanvas');
+    ctx = canvas.getContext('2d');
+    initMarkers();
+    setupControls();
+    drawBackground();
+    drawMarkers();
+    loadAssets(() => { console.log('Изображения загружены'); if (!gameRunning) { drawBackground(); drawMarkers(); } });
+    document.getElementById('startBtn').onclick = () => { initGame(); };
+};
 </script>
 </body>
 </html>
