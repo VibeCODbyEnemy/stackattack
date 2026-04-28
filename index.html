@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Складской грузчик — с музыкой и управлением звуком</title>
+    <title>Складской грузчик — музыка + физика падения</title>
     <style>
         * { user-select: none; touch-action: manipulation; box-sizing: border-box; }
         body { margin: 0; min-height: 100vh; background: #1a2a32; display: flex; justify-content: center; align-items: center; font-family: monospace; overflow: hidden; position: fixed; width: 100%; height: 100%; }
@@ -55,7 +55,6 @@
     <button id="btnPause">⏸️</button>
     <button id="btnRestartGame">🔄 РЕСТАРТ</button>
     <button id="btnToggleUI">🔘 UI вкл/выкл</button>
-    <button id="btnVolume">🔊 10%</button>
     
     <div id="advancedPanels" style="display: flex; gap: 8px; flex-wrap: wrap;">
         <button id="btnMenu">📜</button>
@@ -232,73 +231,40 @@ const imageList = {
 
 // Музыка
 let bgMusic = null;
-let musicEnabled = true;
-let currentVolume = 0.1; // 10%
 
-function initAudio() {
+function initMusic() {
     bgMusic = new Audio('music.mp3');
     bgMusic.loop = true;
-    bgMusic.volume = currentVolume;
-    // Автовоспроизведение разрешено только после жеста пользователя (старт игры)
+    bgMusic.volume = 0.1; // 10% громкости
+    // Автозапуск будет после взаимодействия с пользователем (по кнопке Start)
 }
 
-function setMusicVolume(volume) {
-    if (bgMusic) {
-        bgMusic.volume = Math.min(1, Math.max(0, volume));
-        currentVolume = bgMusic.volume;
-        document.getElementById('btnVolume').innerHTML = `🔊 ${Math.round(currentVolume * 100)}%`;
-        showToast(`Громкость музыки: ${Math.round(currentVolume * 100)}%`, true);
+function playMusic() {
+    if (bgMusic && gameRunning && !gamePaused) {
+        bgMusic.play().catch(e => console.log("Music autoplay blocked, user interaction needed"));
     }
 }
 
-function toggleMusicPlay() {
-    if (!bgMusic) return;
-    if (bgMusic.paused) {
-        bgMusic.play().catch(e => console.log("Автовоспроизведение заблокировано:", e));
-    } else {
-        bgMusic.pause();
-    }
-}
-
-function startMusic() {
-    if (bgMusic && musicEnabled) {
-        bgMusic.currentTime = 0;
-        bgMusic.volume = currentVolume;
-        bgMusic.play().catch(e => console.log("Не удалось запустить музыку:", e));
-    }
-}
-
-function stopMusic() {
+function pauseMusic() {
     if (bgMusic) {
         bgMusic.pause();
     }
 }
 
-// Двойной клик по паузе для mute/unmute
-let pauseClickTimer = null;
-function onPauseClick() {
-    if (pauseClickTimer) {
-        // Двойной клик
-        clearTimeout(pauseClickTimer);
-        pauseClickTimer = null;
-        // Переключение звука (mute/unmute)
-        if (bgMusic) {
-            if (bgMusic.volume > 0) {
-                bgMusic.volume = 0;
-                document.getElementById('btnVolume').innerHTML = `🔇 0%`;
-                showToast("🔇 Звук выключен", false);
-            } else {
-                bgMusic.volume = currentVolume;
-                document.getElementById('btnVolume').innerHTML = `🔊 ${Math.round(currentVolume * 100)}%`;
-                showToast(`🔊 Звук включён (${Math.round(currentVolume * 100)}%)`, true);
-            }
-        }
-    } else {
-        // Одиночный клик — пауза игры
-        gamePaused = !gamePaused;
-        pauseClickTimer = setTimeout(() => {
-            pauseClickTimer = null;
-        }, 250);
+function resumeMusic() {
+    if (bgMusic && gameRunning && !gamePaused) {
+        bgMusic.play().catch(e => console.log("Music resume failed"));
+    }
+}
+
+function setMusicVolume(vol) {
+    if (bgMusic) bgMusic.volume = Math.min(1, Math.max(0, vol));
+}
+
+function toggleMusic() {
+    if (gameRunning && !gamePaused) {
+        if (bgMusic.paused) resumeMusic();
+        else pauseMusic();
     }
 }
 
@@ -851,8 +817,8 @@ function loadAssets(callback) {
         titleImgElement.onerror = () => { titleImgElement.style.display = 'none'; };
         titleImgElement.src = 'title.png';
     }
-    // Инициализация аудио
-    initAudio();
+    // Инициализация музыки
+    initMusic();
 }
 
 function gameOver(reason) {
@@ -860,7 +826,7 @@ function gameOver(reason) {
     gameRunning = false;
     if (spawnInterval) clearInterval(spawnInterval);
     if (animationFrameId) cancelAnimationFrame(animationFrameId);
-    stopMusic();
+    if (bgMusic) bgMusic.pause();
     alert(`Игра окончена!\n${reason}\nОчки: ${score}`);
     document.getElementById('titleScreen').style.display = 'flex';
     document.getElementById('ui').style.display = 'none';
@@ -910,9 +876,11 @@ function fullRestart() {
     if (animationFrameId) cancelAnimationFrame(animationFrameId);
     lastTimestamp = 0;
     animationFrameId = requestAnimationFrame(gameLoop);
-    // Перезапускаем музыку
-    startMusic();
-    showToast(`🔄 Рестарт | Жизни: ${lives} | Музыка: ${Math.round(currentVolume*100)}%`);
+    if (bgMusic) {
+        bgMusic.currentTime = 0;
+        if (!gamePaused) bgMusic.play().catch(e=>console.log("Music play blocked"));
+    }
+    showToast(`🔄 Рестарт | Жизни: ${lives} | Падение: ${(BASE_FALL_SPEED_PX_SEC * boxFallSpeedMultiplier).toFixed(1)} px/сек`);
 }
 
 let jumpRequested = false;
@@ -943,6 +911,26 @@ function drawHearts() {
     }
 }
 
+// Новая функция проверки, стоит ли игрок на каком-либо ящике
+function getStandingBox() {
+    const feetY = playerY + PLAYER_HALF_HEIGHT;
+    // Проверяем все ящики
+    for (let box of boxes) {
+        const boxTop = box.y - BOX_SIZE/2;
+        const boxLeft = box.x - BOX_SIZE/2;
+        const boxRight = box.x + BOX_SIZE/2;
+        // Игрок должен перекрывать ящик по горизонтали хотя бы на 5 пикселей
+        const overlapLeft = Math.max(0, Math.min(playerX + PLAYER_HALF_WIDTH, boxRight) - Math.max(playerX - PLAYER_HALF_WIDTH, boxLeft));
+        if (overlapLeft >= 5) {
+            const targetStandY = boxTop - standOnBoxOffset;
+            if (feetY >= targetStandY - 5 && feetY <= targetStandY + 8 && playerVy >= 0) {
+                return box;
+            }
+        }
+    }
+    return null;
+}
+
 function gameLoop(nowMs) {
     if (!gameRunning || gamePaused) {
         animationFrameId = requestAnimationFrame(gameLoop);
@@ -971,6 +959,7 @@ function gameLoop(nowMs) {
         forcePushDirection = 0;
     }
     
+    // Горизонтальные коллизии
     for (let box of boxes) {
         const boxLeft = box.x - BOX_SIZE/2, boxRight = box.x + BOX_SIZE/2;
         const boxTop = box.y - BOX_SIZE/2, boxBottom = box.y + BOX_SIZE/2;
@@ -993,21 +982,23 @@ function gameLoop(nowMs) {
         playerY += playerVy; 
     }
     
-    let platformY = null;
-    const feetY = playerY + PLAYER_HALF_HEIGHT;
-    for (let box of boxes) {
-        const boxTop = box.y - BOX_SIZE/2;
-        const boxLeft = box.x - BOX_SIZE/2, boxRight = box.x + BOX_SIZE/2;
-        if (playerX + PLAYER_HALF_WIDTH > boxLeft && playerX - PLAYER_HALF_WIDTH < boxRight) {
-            const targetStandY = boxTop - standOnBoxOffset;
-            if (feetY >= targetStandY - 5 && feetY <= targetStandY + 8 && playerVy >= 0) {
-                platformY = targetStandY; break;
-            }
-        }
+    // Проверка стояния на ящиках (улучшенная)
+    const standingBox = getStandingBox();
+    if (standingBox !== null) {
+        const boxTop = standingBox.y - BOX_SIZE/2;
+        const targetStandY = boxTop - standOnBoxOffset;
+        playerY = targetStandY - PLAYER_HALF_HEIGHT;
+        playerVy = 0;
+        grounded = true;
+    } 
+    else if (playerY + PLAYER_HALF_HEIGHT >= playerGroundY) {
+        playerY = playerGroundY - PLAYER_HALF_HEIGHT;
+        playerVy = 0;
+        grounded = true;
+    } 
+    else {
+        grounded = false;
     }
-    if (platformY !== null) { playerY = platformY - PLAYER_HALF_HEIGHT; playerVy = 0; grounded = true; }
-    else if (playerY + PLAYER_HALF_HEIGHT >= playerGroundY) { playerY = playerGroundY - PLAYER_HALF_HEIGHT; playerVy = 0; grounded = true; }
-    else grounded = false;
     
     playerX = Math.min(rightBound - PLAYER_HALF_WIDTH, Math.max(leftBound + PLAYER_HALF_WIDTH, playerX));
     
@@ -1048,15 +1039,6 @@ function drawUI() {
     ctx.fillText(`ОЧКИ: ${score}`, W-130,30); 
 }
 
-function changeVolume(delta) {
-    let newVol = currentVolume + delta;
-    newVol = Math.min(1, Math.max(0, newVol));
-    setMusicVolume(newVol);
-    if (!bgMusic.paused) {
-        bgMusic.volume = newVol;
-    }
-}
-
 function toggleAdvancedUI() {
     const panels = document.getElementById('advancedPanels');
     if (panels.style.display === 'none') {
@@ -1080,13 +1062,16 @@ function resizeCanvas() {
 }
 window.addEventListener('resize', resizeCanvas);
 
+// Авто-пауза при сворачивании/переключении вкладки
 function handleVisibilityChange() {
     if (!gameRunning) return;
     if (document.hidden) {
         gamePaused = true;
+        if (bgMusic) bgMusic.pause();
         showToast("⏸ Игра на паузе (вкладка неактивна)", false);
     } else {
         gamePaused = false;
+        if (bgMusic) bgMusic.play().catch(e=>console.log("Music resume error"));
         showToast("▶ Игра возобновлена", true);
         lastTimestamp = 0;
     }
@@ -1096,12 +1081,14 @@ document.addEventListener('visibilitychange', handleVisibilityChange);
 window.addEventListener('blur', () => {
     if (gameRunning) {
         gamePaused = true;
+        if (bgMusic) bgMusic.pause();
         showToast("⏸ Игра на паузе (окно не активно)", false);
     }
 });
 window.addEventListener('focus', () => {
     if (gameRunning) {
         gamePaused = false;
+        if (bgMusic) bgMusic.play().catch(e=>console.log("Music resume error"));
         showToast("▶ Игра возобновлена", true);
         lastTimestamp = 0;
     }
@@ -1142,8 +1129,12 @@ function initGame() {
     lastTimestamp = 0;
     animationFrameId = requestAnimationFrame(gameLoop);
     // Запуск музыки
-    startMusic();
-    showToast(`🎮 Игра запущена | Музыка ${Math.round(currentVolume*100)}%`);
+    if (bgMusic) {
+        bgMusic.currentTime = 0;
+        bgMusic.volume = 0.1;
+        bgMusic.play().catch(e => console.log("Music autoplay blocked, user interaction needed"));
+    }
+    showToast(`🎮 Игра запущена | Музыка 10%`);
 }
 
 function setupControls() {
@@ -1157,8 +1148,6 @@ function setupControls() {
         if(e.key === 's') boxGroundDown();
         if(e.key === 'z') { forcePushActive = true; e.preventDefault(); }
         if(e.key === 'Z') { forcePushActive = true; e.preventDefault(); }
-        if(e.key === 'v') changeVolume(-0.05);
-        if(e.key === 'V') changeVolume(0.05);
     });
     window.addEventListener('keyup', (e) => {
         if(e.key === 'ArrowLeft') leftPressed=false;
@@ -1174,34 +1163,30 @@ function setupControls() {
     btnLeft.addEventListener('touchend', (e) => { e.preventDefault(); leftPressed = false; });
     btnLeft.addEventListener('mousedown', () => leftPressed = true);
     btnLeft.addEventListener('mouseup', () => leftPressed = false);
-    btnLeft.addEventListener('mouseleave', () => leftPressed = false);
 
     btnRight.addEventListener('touchstart', (e) => { e.preventDefault(); rightPressed = true; });
     btnRight.addEventListener('touchend', (e) => { e.preventDefault(); rightPressed = false; });
     btnRight.addEventListener('mousedown', () => rightPressed = true);
     btnRight.addEventListener('mouseup', () => rightPressed = false);
-    btnRight.addEventListener('mouseleave', () => rightPressed = false);
 
     btnJump.addEventListener('touchstart', (e) => { e.preventDefault(); jump(); });
     btnJump.addEventListener('click', jump);
 
-    document.getElementById('btnPause').onclick = onPauseClick;
-    document.getElementById('btnRestartGame').onclick = () => fullRestart();
-    document.getElementById('btnToggleUI').onclick = toggleAdvancedUI;
-    document.getElementById('btnVolume').onclick = () => {
-        if (bgMusic) {
-            if (bgMusic.volume > 0) {
-                bgMusic.volume = 0;
-                document.getElementById('btnVolume').innerHTML = `🔇 0%`;
-                showToast("🔇 Звук выключен", false);
-            } else {
-                bgMusic.volume = currentVolume;
-                document.getElementById('btnVolume').innerHTML = `🔊 ${Math.round(currentVolume * 100)}%`;
-                showToast(`🔊 Звук включён (${Math.round(currentVolume * 100)}%)`, true);
-            }
+    const pauseBtn = document.getElementById('btnPause');
+    pauseBtn.onclick = () => {
+        gamePaused = !gamePaused;
+        if (gamePaused) {
+            if (bgMusic) bgMusic.pause();
+            showToast("⏸ Игра на паузе", false);
+        } else {
+            if (bgMusic) bgMusic.play().catch(e=>console.log("Music resume error"));
+            showToast("▶ Игра продолжена", true);
+            lastTimestamp = 0;
         }
     };
-    document.getElementById('btnMenu').onclick = () => { gameRunning=false; if(spawnInterval) clearInterval(spawnInterval); if(animationFrameId) cancelAnimationFrame(animationFrameId); stopMusic(); document.getElementById('titleScreen').style.display='flex'; document.getElementById('ui').style.display='none'; document.getElementById('touchPanel').style.display='none'; };
+    document.getElementById('btnRestartGame').onclick = () => fullRestart();
+    document.getElementById('btnToggleUI').onclick = toggleAdvancedUI;
+    document.getElementById('btnMenu').onclick = () => { gameRunning=false; if(spawnInterval) clearInterval(spawnInterval); if(animationFrameId) cancelAnimationFrame(animationFrameId); if(bgMusic) bgMusic.pause(); document.getElementById('titleScreen').style.display='flex'; document.getElementById('ui').style.display='none'; document.getElementById('touchPanel').style.display='none'; };
     document.getElementById('btnToggleMarkers').onclick = () => markersVisible = !markersVisible;
     document.getElementById('btnGodMode').onclick = () => godMode = !godMode;
     document.getElementById('btnPlayerGroundUp').onclick = playerGroundUp; document.getElementById('btnPlayerGroundDown').onclick = playerGroundDown;
