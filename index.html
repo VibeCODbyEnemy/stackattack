@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Складской грузчик — урон и сбивание ящиков головой</title>
+    <title>Складской грузчик — режим "Только игра"</title>
     <style>
         * { user-select: none; touch-action: manipulation; }
         body { margin: 0; min-height: 100vh; background: #1a2a32; display: flex; justify-content: center; align-items: center; font-family: monospace; overflow: hidden; }
@@ -39,6 +39,7 @@
         .horiz-panel { background: #3a2a5a80 !important; }
         .vert-panel { background: #2a3a5a80 !important; }
         .push-speed-panel { background: #5a3a2a80 !important; }
+        .hidden-panel { display: none !important; }
     </style>
 </head>
 <body>
@@ -46,77 +47,83 @@
     <canvas id="gameCanvas" width="800" height="400"></canvas>
 </div>
 <div class="ui" id="ui" style="display: none;">
+    <!-- Базовые кнопки (всегда видны) -->
     <button id="btnPause">⏸️</button>
-    <button id="btnMenu">📜</button>
     <button id="btnRestartGame">🔄 РЕСТАРТ</button>
-    <button id="btnToggleMarkers">🔴 ЗОНЫ</button>
-    <button id="btnGodMode">🛡️</button>
+    <button id="btnToggleUI">🔘 UI вкл/выкл</button>
     
-    <div class="speed-panel">
-        <span>🏃 СКОРОСТЬ</span>
-        <button id="btnPlayerSpeedDown" style="background:#aa4444;">-</button>
-        <span id="playerSpeedValue" style="min-width:35px;">1.5</span>
-        <button id="btnPlayerSpeedUp" style="background:#44aa44;">+</button>
-        <div class="separator"></div>
-        <span>📦 ПАДЕНИЕ (плавно)</span>
-        <button id="btnBoxFallSpeedDown" style="background:#aa4444;">-</button>
-        <span id="boxFallSpeedValue" style="min-width:35px;">0.4</span>
-        <button id="btnBoxFallSpeedUp" style="background:#44aa44;">+</button>
-        <div class="separator"></div>
-        <span>⚡ СПАВН</span>
-        <button id="btnSpeed1" class="active">x1</button>
-        <button id="btnSpeed2">x2</button>
-        <button id="btnSpeed4">x4</button>
-        <button id="btnSpeed8">x8</button>
-    </div>
-    
-    <div class="capture-panel horiz-panel">
-        <span>↔️ ГОРИЗ. ЗОНА (Z)</span>
-        <button id="btnHorizCaptureDown" style="background:#aa4444;">−</button>
-        <span id="horizCaptureValue" class="capture-value">5</span>
-        <button id="btnHorizCaptureUp" style="background:#44aa44;">+</button>
-        <span style="font-size:9px;">пикс. от центра</span>
-    </div>
-    
-    <div class="capture-panel vert-panel">
-        <span>🔼 ВЕРТ. ДОПУСК (центр)</span>
-        <button id="btnVertPushDown" style="background:#aa4444;">−</button>
-        <span id="vertPushValue" class="capture-value">10</span>
-        <button id="btnVertPushUp" style="background:#44aa44;">+</button>
-        <span style="font-size:9px;">пикс. от центра</span>
-    </div>
-    
-    <div class="push-speed-panel">
-        <span>📦 СКОРОСТЬ ТОЛКАНИЯ</span>
-        <button id="btnPushSpeedDown" style="background:#aa4444;">-</button>
-        <span id="pushSpeedValue" class="capture-value">0.5</span>
-        <button id="btnPushSpeedUp" style="background:#44aa44;">+</button>
-        <span style="font-size:9px;">x (чем выше, тем быстрее)</span>
-    </div>
-    
-    <div class="height-controls" style="background: #2a3a2a80;">
-        <span>👤 ПОЛ</span>
-        <button id="btnPlayerGroundUp">▲</button>
-        <button id="btnPlayerGroundDown">▼</button>
-        <span id="playerGroundValue" class="height-indicator">360</span>
-    </div>
-    <div class="height-controls" style="background: #3a2a3a80;">
-        <span>📦 ЯЩИКИ</span>
-        <button id="btnBoxGroundUp">▲</button>
-        <button id="btnBoxGroundDown">▼</button>
-        <span id="boxGroundValue" class="height-indicator">370</span>
-    </div>
-    <div class="height-controls" style="background: #2a2a4a80;">
-        <span>📐 НА ЯЩИКЕ</span>
-        <button id="btnStandOffsetUp" class="stand-offset-btn">▲</button>
-        <button id="btnStandOffsetDown" class="stand-offset-btn">▼</button>
-        <span id="standOffsetValue" class="height-indicator">12</span>
-    </div>
-    <div class="height-controls save-controls">
-        <span>💾 СОХРАНЕНИЕ</span>
-        <button id="btnSyncHeights" class="sync-btn">🔄 СИНХР</button>
-        <button id="btnSaveToCode" class="save-to-code-btn">💾 СОХР. В КОД</button>
-        <button id="btnSaveFullConfig" style="background:#ffaa33;">💿 ВСЕ НАСТР.</button>
+    <!-- Все регулировки (могут скрываться) -->
+    <div id="advancedPanels" style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <button id="btnMenu">📜</button>
+        <button id="btnToggleMarkers">🔴 ЗОНЫ</button>
+        <button id="btnGodMode">🛡️</button>
+        
+        <div class="speed-panel">
+            <span>🏃 СКОРОСТЬ</span>
+            <button id="btnPlayerSpeedDown" style="background:#aa4444;">-</button>
+            <span id="playerSpeedValue" style="min-width:35px;">1.5</span>
+            <button id="btnPlayerSpeedUp" style="background:#44aa44;">+</button>
+            <div class="separator"></div>
+            <span>📦 ПАДЕНИЕ (плавно)</span>
+            <button id="btnBoxFallSpeedDown" style="background:#aa4444;">-</button>
+            <span id="boxFallSpeedValue" style="min-width:35px;">0.4</span>
+            <button id="btnBoxFallSpeedUp" style="background:#44aa44;">+</button>
+            <div class="separator"></div>
+            <span>⚡ СПАВН</span>
+            <button id="btnSpeed1" class="active">x1</button>
+            <button id="btnSpeed2">x2</button>
+            <button id="btnSpeed4">x4</button>
+            <button id="btnSpeed8">x8</button>
+        </div>
+        
+        <div class="capture-panel horiz-panel">
+            <span>↔️ ГОРИЗ. ЗОНА (Z)</span>
+            <button id="btnHorizCaptureDown" style="background:#aa4444;">−</button>
+            <span id="horizCaptureValue" class="capture-value">5</span>
+            <button id="btnHorizCaptureUp" style="background:#44aa44;">+</button>
+            <span style="font-size:9px;">пикс. от центра</span>
+        </div>
+        
+        <div class="capture-panel vert-panel">
+            <span>🔼 ВЕРТ. ДОПУСК (центр)</span>
+            <button id="btnVertPushDown" style="background:#aa4444;">−</button>
+            <span id="vertPushValue" class="capture-value">10</span>
+            <button id="btnVertPushUp" style="background:#44aa44;">+</button>
+            <span style="font-size:9px;">пикс. от центра</span>
+        </div>
+        
+        <div class="push-speed-panel">
+            <span>📦 СКОРОСТЬ ТОЛКАНИЯ</span>
+            <button id="btnPushSpeedDown" style="background:#aa4444;">-</button>
+            <span id="pushSpeedValue" class="capture-value">0.5</span>
+            <button id="btnPushSpeedUp" style="background:#44aa44;">+</button>
+            <span style="font-size:9px;">x (чем выше, тем быстрее)</span>
+        </div>
+        
+        <div class="height-controls" style="background: #2a3a2a80;">
+            <span>👤 ПОЛ</span>
+            <button id="btnPlayerGroundUp">▲</button>
+            <button id="btnPlayerGroundDown">▼</button>
+            <span id="playerGroundValue" class="height-indicator">360</span>
+        </div>
+        <div class="height-controls" style="background: #3a2a3a80;">
+            <span>📦 ЯЩИКИ</span>
+            <button id="btnBoxGroundUp">▲</button>
+            <button id="btnBoxGroundDown">▼</button>
+            <span id="boxGroundValue" class="height-indicator">370</span>
+        </div>
+        <div class="height-controls" style="background: #2a2a4a80;">
+            <span>📐 НА ЯЩИКЕ</span>
+            <button id="btnStandOffsetUp" class="stand-offset-btn">▲</button>
+            <button id="btnStandOffsetDown" class="stand-offset-btn">▼</button>
+            <span id="standOffsetValue" class="height-indicator">12</span>
+        </div>
+        <div class="height-controls save-controls">
+            <span>💾 СОХРАНЕНИЕ</span>
+            <button id="btnSyncHeights" class="sync-btn">🔄 СИНХР</button>
+            <button id="btnSaveToCode" class="save-to-code-btn">💾 СОХР. В КОД</button>
+            <button id="btnSaveFullConfig" style="background:#ffaa33;">💿 ВСЕ НАСТР.</button>
+        </div>
     </div>
     <div class="score" id="scoreBoard">ОЧКИ: 0</div>
 </div>
@@ -124,7 +131,7 @@
     <div class="move-group"><button id="btnLeft">◀</button><button id="btnRight">▶</button></div>
     <div class="action-group"><button id="btnJump">▲</button></div>
 </div>
-<div class="info" id="infoPanel">❤️ Жизни: 3 | Удар головой по ящику снизу = взрыв без урона</div>
+<div class="info" id="infoPanel">❤️ Жизни: 3 | Режим "Только игра" - нажмите 🔘 UI для настроек</div>
 <div class="title-screen" id="titleScreen">
     <h1>📦 СКЛАДСКОЙ ГРУЗЧИК</h1>
     <button id="startBtn">▶ НАЧАТЬ ИГРУ ◀</button>
@@ -167,7 +174,6 @@ let lives = 3;
 let damageCooldown = 0;
 const DAMAGE_COOLDOWN_MAX = 0.6;
 
-// Эффект тряски при получении урона
 let shakeAmount = 0;
 let shakeDuration = 0;
 
@@ -353,7 +359,6 @@ function updateFallingBoxes(deltaSec) {
     if (anyFinished) checkHorizontalLines();
 }
 
-// Уничтожение ящика с эффектом взрыва
 function destroyBox(box, addScore = true) {
     if (!box || !box.active) return;
     addExplosion(box.x, box.y);
@@ -367,10 +372,9 @@ function destroyBox(box, addScore = true) {
     }
 }
 
-// Эффект тряски при уроне
 function applyDamageShake() {
     shakeAmount = 8;
-    shakeDuration = 0.3; // секунд
+    shakeDuration = 0.3;
 }
 
 function updateShake(deltaSec) {
@@ -378,7 +382,6 @@ function updateShake(deltaSec) {
         shakeDuration -= deltaSec;
         if (shakeDuration <= 0) shakeAmount = 0;
         else {
-            // Осцилляция затухает
             shakeAmount = Math.max(0, shakeAmount - deltaSec * 20);
         }
     } else {
@@ -386,7 +389,6 @@ function updateShake(deltaSec) {
     }
 }
 
-// Проверка урона и ударов головой
 function checkCollisionWithBoxes(deltaSec) {
     if (godMode) return;
     if (damageCooldown > 0) {
@@ -396,59 +398,43 @@ function checkCollisionWithBoxes(deltaSec) {
 
     for (let box of boxes) {
         if (!box.active) continue;
-        // Границы ящика
         const boxLeft = box.x - BOX_SIZE/2;
         const boxRight = box.x + BOX_SIZE/2;
         const boxTop = box.y - BOX_SIZE/2;
         const boxBottom = box.y + BOX_SIZE/2;
-        // Границы игрока
         const playerLeft = playerX - PLAYER_HALF_WIDTH;
         const playerRight = playerX + PLAYER_HALF_WIDTH;
         const playerTop = playerY - PLAYER_HALF_HEIGHT;
         const playerBottom = playerY + PLAYER_HALF_HEIGHT;
         
-        // Есть ли пересечение?
         if (playerRight > boxLeft && playerLeft < boxRight && playerBottom > boxTop && playerTop < boxBottom) {
-            // Определяем направление столкновения
-            // Вертикальное перекрытие
-            const overlapTop = playerBottom - boxTop;    // игрок снизу касается верха ящика (стояние)
-            const overlapBottom = boxBottom - playerTop; // игрок сверху касается низа ящика (удар головой)
+            const overlapTop = playerBottom - boxTop;
+            const overlapBottom = boxBottom - playerTop;
+            const minVerticalOverlap = Math.min(overlapTop, overlapBottom);
             const overlapLeft = playerRight - boxLeft;
             const overlapRight = boxRight - playerLeft;
-            
-            const minVerticalOverlap = Math.min(overlapTop, overlapBottom);
             const minHorizontalOverlap = Math.min(overlapLeft, overlapRight);
             
-            // Приоритет вертикального столкновения
             if (minVerticalOverlap < minHorizontalOverlap) {
-                // Столкновение сверху или снизу
                 if (overlapTop < overlapBottom && overlapTop > 0) {
-                    // Игрок сверху наступает на ящик (стояние) — не трогаем, обрабатывается в физике
                     continue;
                 } else if (overlapBottom < overlapTop && overlapBottom > 0) {
-                    // Игрок снизу, удар головой (прыжок)
-                    // ВАЖНО: игрок должен двигаться вверх (Vy < 0) или хотя бы не падать сильно
                     if (playerVy < 0) {
-                        // Сбиваем ящик, урона нет
                         destroyBox(box, true);
                         showToast("💥 Ящик сбит головой! +20 очков", true);
-                        // Небольшой отскок (по желанию)
                         playerVy = Math.min(playerVy, -2);
                         continue;
                     }
                 }
             }
-            // Если не сработало условие удара головой — проверяем, не падает ли ящик на голову
-            // Падающий ящик сверху (движется вниз и его нижняя часть заходит в верхнюю часть игрока)
-            if (box.isFalling && box.fallTargetY > box.y) { // падает вниз
-                // Доп. проверка: если ящик находится выше игрока и касается его головы
+            if (box.isFalling && box.fallTargetY > box.y) {
                 if (boxBottom > playerTop && box.y < playerY) {
                     if (damageCooldown <= 0 && !godMode) {
                         lives--;
                         damageCooldown = DAMAGE_COOLDOWN_MAX;
                         applyDamageShake();
                         showToast(`❤️ Потеряно сердце! Осталось: ${lives}`, false);
-                        destroyBox(box, false); // ящик взрывается без начисления очков
+                        destroyBox(box, false);
                         if (lives <= 0) {
                             gameOver("У вас закончились жизни!");
                             return;
@@ -897,7 +883,6 @@ function gameLoop(nowMs) {
         forcePushDirection = 0;
     }
     
-    // Горизонтальные коллизии с ящиками (отталкивание)
     for (let box of boxes) {
         const boxLeft = box.x - BOX_SIZE/2, boxRight = box.x + BOX_SIZE/2;
         const boxTop = box.y - BOX_SIZE/2, boxBottom = box.y + BOX_SIZE/2;
@@ -945,8 +930,6 @@ function gameLoop(nowMs) {
     }
     
     updateFallingBoxes(deltaSec);
-    
-    // Проверка столкновений (урон / сбивание)
     checkCollisionWithBoxes(deltaSec);
     if (lives <= 0) return;
     
@@ -955,7 +938,6 @@ function gameLoop(nowMs) {
     updateParticles();
     drawBackground(); drawMarkers(); drawBoxes(); drawPlayer(); drawParticles(); drawUI(); drawHearts();
     
-    // Применяем тряску canvas
     let canvasX = 0, canvasY = 0;
     if (shakeAmount > 0) {
         canvasX = (Math.random() - 0.5) * shakeAmount;
@@ -984,6 +966,17 @@ function drawUI() {
     ctx.fillText(`Гор:${horizontalTolerance}`, W-130,72); 
     ctx.fillText(`Верт:${verticalPushTolerance}`, W-130,84); 
     ctx.fillText(`Толк:x${pushSpeedMultiplier.toFixed(1)}`, W-130,96); 
+}
+
+function toggleAdvancedUI() {
+    const panels = document.getElementById('advancedPanels');
+    if (panels.style.display === 'none') {
+        panels.style.display = 'flex';
+        showToast("🔘 Расширенный интерфейс включён", true);
+    } else {
+        panels.style.display = 'none';
+        showToast("🔘 Расширенный интерфейс скрыт (только игра)", true);
+    }
 }
 
 function initGame() {
@@ -1015,10 +1008,12 @@ function initGame() {
     document.getElementById('titleScreen').style.display = 'none';
     document.getElementById('ui').style.display = 'flex';
     document.getElementById('touchPanel').style.display = 'flex';
+    // По умолчанию скрываем расширенные панели (только игра)
+    document.getElementById('advancedPanels').style.display = 'none';
     if (animationFrameId) cancelAnimationFrame(animationFrameId);
     lastTimestamp = 0;
     animationFrameId = requestAnimationFrame(gameLoop);
-    showToast(`🎮 Жизни: ${lives} | Удар головой сбивает ящик!`);
+    showToast(`🎮 Режим "Только игра" | 🔘 UI для настроек`);
 }
 
 function setupControls() {
@@ -1040,9 +1035,12 @@ function setupControls() {
     });
     document.getElementById('btnLeft').addEventListener('touchstart',e=>{e.preventDefault(); leftPressed=true;}); document.getElementById('btnLeft').addEventListener('touchend',e=>{e.preventDefault(); leftPressed=false;}); document.getElementById('btnLeft').addEventListener('mousedown',()=>leftPressed=true); document.getElementById('btnLeft').addEventListener('mouseup',()=>leftPressed=false);
     document.getElementById('btnRight').addEventListener('touchstart',e=>{e.preventDefault(); rightPressed=true;}); document.getElementById('btnRight').addEventListener('touchend',e=>{e.preventDefault(); rightPressed=false;}); document.getElementById('btnRight').addEventListener('mousedown',()=>rightPressed=true); document.getElementById('btnRight').addEventListener('mouseup',()=>rightPressed=false);
-    document.getElementById('btnJump').addEventListener('click', jump); document.getElementById('btnPause').onclick = () => gamePaused = !gamePaused;
-    document.getElementById('btnMenu').onclick = () => { gameRunning=false; if(spawnInterval) clearInterval(spawnInterval); if(animationFrameId) cancelAnimationFrame(animationFrameId); document.getElementById('titleScreen').style.display='flex'; document.getElementById('ui').style.display='none'; document.getElementById('touchPanel').style.display='none'; };
+    document.getElementById('btnJump').addEventListener('click', jump); 
+    document.getElementById('btnPause').onclick = () => gamePaused = !gamePaused;
     document.getElementById('btnRestartGame').onclick = () => fullRestart();
+    document.getElementById('btnToggleUI').onclick = toggleAdvancedUI;
+    // Остальные кнопки (для панелей) — они будут доступны только если панель видна
+    document.getElementById('btnMenu').onclick = () => { gameRunning=false; if(spawnInterval) clearInterval(spawnInterval); if(animationFrameId) cancelAnimationFrame(animationFrameId); document.getElementById('titleScreen').style.display='flex'; document.getElementById('ui').style.display='none'; document.getElementById('touchPanel').style.display='none'; };
     document.getElementById('btnToggleMarkers').onclick = () => markersVisible = !markersVisible;
     document.getElementById('btnGodMode').onclick = () => godMode = !godMode;
     document.getElementById('btnPlayerGroundUp').onclick = playerGroundUp; document.getElementById('btnPlayerGroundDown').onclick = playerGroundDown;
