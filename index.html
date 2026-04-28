@@ -3,21 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Складской грузчик — музыка + физика падения</title>
+    <title>Складской грузчик — разноцветные ящики</title>
     <style>
         * { user-select: none; touch-action: manipulation; box-sizing: border-box; }
         body { margin: 0; min-height: 100vh; background: #1a2a32; display: flex; justify-content: center; align-items: center; font-family: monospace; overflow: hidden; position: fixed; width: 100%; height: 100%; }
         .game-container { position: relative; display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; }
         canvas { display: block; box-shadow: 0 0 20px rgba(0,0,0,0.3); cursor: pointer; background: #2a4a5a; width: auto; height: auto; max-width: 100%; max-height: 100%; object-fit: contain; }
         .ui { position: fixed; top: 10px; left: 0; right: 0; display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; z-index: 100; pointer-events: none; padding: 0 8px; }
-        .ui button, .score, .speed-panel, .height-controls, .capture-panel, .push-speed-panel { pointer-events: auto; background: rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.4); border-radius: 40px; color: white; font-size: 13px; font-weight: bold; padding: 6px 12px; cursor: pointer; font-family: monospace; backdrop-filter: blur(4px); white-space: nowrap; }
+        .ui button, .score, .speed-panel, .height-controls, .capture-panel, .push-speed-panel, .jump-panel { pointer-events: auto; background: rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.4); border-radius: 40px; color: white; font-size: 13px; font-weight: bold; padding: 6px 12px; cursor: pointer; font-family: monospace; backdrop-filter: blur(4px); white-space: nowrap; }
         .score { background: rgba(0,0,0,0.8); border-radius: 40px; padding: 6px 16px; color: #ffdd88; font-size: 18px; font-weight: bold; border: 1px solid gold; }
-        .speed-panel, .capture-panel, .push-speed-panel { display: inline-flex; gap: 5px; background: rgba(0,0,0,0.6); border-radius: 40px; padding: 4px 8px; align-items: center; flex-wrap: wrap; }
-        .speed-panel span, .capture-panel span, .push-speed-panel span { font-size: 11px; color: #aaffdd; margin: 0 4px; }
-        .speed-panel button, .capture-panel button, .push-speed-panel button { background: #ff8800; border: none; border-radius: 30px; padding: 4px 10px; font-size: 12px; min-width: 38px; }
+        .speed-panel, .capture-panel, .push-speed-panel, .jump-panel { display: inline-flex; gap: 5px; background: rgba(0,0,0,0.6); border-radius: 40px; padding: 4px 8px; align-items: center; flex-wrap: wrap; }
+        .speed-panel span, .capture-panel span, .push-speed-panel span, .jump-panel span { font-size: 11px; color: #aaffdd; margin: 0 4px; }
+        .speed-panel button, .capture-panel button, .push-speed-panel button, .jump-panel button { background: #ff8800; border: none; border-radius: 30px; padding: 4px 10px; font-size: 12px; min-width: 38px; }
         .speed-panel .active { background: #00aa44; }
         .height-controls { display: inline-flex; gap: 5px; background: rgba(0,0,0,0.6); border-radius: 40px; padding: 4px 8px; align-items: center; }
-        .height-controls button, .capture-panel button, .push-speed-panel button { background: #4488ff; border: none; border-radius: 30px; padding: 4px 10px; font-size: 14px; font-weight: bold; cursor: pointer; }
+        .height-controls button, .capture-panel button, .push-speed-panel button, .jump-panel button { background: #4488ff; border: none; border-radius: 30px; padding: 4px 10px; font-size: 14px; font-weight: bold; cursor: pointer; }
         .height-indicator { font-size: 10px; background: #000000aa; border-radius: 20px; padding: 2px 6px; margin-left: 3px; }
         .save-controls { background: #4a2a2a80 !important; }
         .save-controls button { background: #ff8844 !important; }
@@ -29,8 +29,8 @@
         .touch-panel button:active { transform: scale(0.95); background: #4a6a8a; }
         @media (max-width: 650px) {
             .touch-panel button { width: 55px; height: 55px; font-size: 24px; }
-            .ui button, .score, .speed-panel, .height-controls, .capture-panel, .push-speed-panel { font-size: 9px; padding: 4px 8px; }
-            .speed-panel span, .capture-panel span, .push-speed-panel span { font-size: 8px; }
+            .ui button, .score, .speed-panel, .height-controls, .capture-panel, .push-speed-panel, .jump-panel { font-size: 9px; padding: 4px 8px; }
+            .speed-panel span, .capture-panel span, .push-speed-panel span, .jump-panel span { font-size: 8px; }
         }
         .info { display: none; }
         .title-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1a2a32; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; text-align: center; padding: 20px; }
@@ -44,6 +44,7 @@
         .horiz-panel { background: #3a2a5a80 !important; }
         .vert-panel { background: #2a3a5a80 !important; }
         .push-speed-panel { background: #5a3a2a80 !important; }
+        .jump-panel { background: #2a5a3a80 !important; }
         .hidden-panel { display: none !important; }
     </style>
 </head>
@@ -62,12 +63,12 @@
         <button id="btnGodMode">🛡️</button>
         
         <div class="speed-panel">
-            <span>🏃 СКОРОСТЬ</span>
+            <span>🏃 СКОРОСТЬ ДВИЖЕНИЯ</span>
             <button id="btnPlayerSpeedDown" style="background:#aa4444;">-</button>
             <span id="playerSpeedValue" style="min-width:35px;">1.5</span>
             <button id="btnPlayerSpeedUp" style="background:#44aa44;">+</button>
             <div class="separator"></div>
-            <span>📦 ПАДЕНИЕ (плавно)</span>
+            <span>📦 ПАДЕНИЕ</span>
             <button id="btnBoxFallSpeedDown" style="background:#aa4444;">-</button>
             <span id="boxFallSpeedValue" style="min-width:35px;">0.4</span>
             <button id="btnBoxFallSpeedUp" style="background:#44aa44;">+</button>
@@ -77,6 +78,14 @@
             <button id="btnSpeed2">x2</button>
             <button id="btnSpeed4">x4</button>
             <button id="btnSpeed8">x8</button>
+        </div>
+        
+        <div class="jump-panel">
+            <span>🦘 СИЛА ПРЫЖКА</span>
+            <button id="btnJumpPowerDown" style="background:#aa4444;">-</button>
+            <span id="jumpPowerValue" class="capture-value">-8</span>
+            <button id="btnJumpPowerUp" style="background:#44aa44;">+</button>
+            <span style="font-size:9px;">(чем ниже, тем выше)</span>
         </div>
         
         <div class="capture-panel horiz-panel">
@@ -151,6 +160,7 @@ const SAVED_BOX_FALL_SPEED = 3;
 const SAVED_HORIZONTAL_TOLERANCE = 5;
 const SAVED_VERTICAL_PUSH_TOLERANCE = 10;
 const SAVED_PUSH_SPEED_MULTIPLIER = 0.5;
+const SAVED_JUMP_POWER = -8;
 // ==================================
 
 const W = 800, H = 400;
@@ -158,7 +168,6 @@ const BOX_SIZE = 38;
 const MAX_STACK = 8;
 const WIN_LINE = 16;
 const BASE_SPAWN_DELAY = 2200;
-const DEFAULT_JUMP_POWER = -8;
 const DEFAULT_GRAVITY = 0.5;
 const DEFAULT_MARKERS = [97,135,173,211,249,287,325,363,401,439,477,515,553,591,629,667];
 const PLAYER_WIDTH = 32;
@@ -167,6 +176,7 @@ const PLAYER_HALF_WIDTH = PLAYER_WIDTH/2;
 const PLAYER_HALF_HEIGHT = PLAYER_HEIGHT/2;
 
 const BASE_FALL_SPEED_PX_SEC = 60;
+const BOX_COLORS = ['#ff4444', '#4444ff', '#44ff44', '#ffff44', '#ff44ff']; // красный, синий, зелёный, жёлтый, фиолетовый
 
 let canvas, ctx;
 let gameRunning = false;
@@ -191,6 +201,7 @@ let spawnSpeedMultiplier = 1;
 let horizontalTolerance = SAVED_HORIZONTAL_TOLERANCE;
 let verticalPushTolerance = SAVED_VERTICAL_PUSH_TOLERANCE;
 let pushSpeedMultiplier = SAVED_PUSH_SPEED_MULTIPLIER;
+let jumpPower = SAVED_JUMP_POWER;
 
 let playerX = 200, playerY = playerGroundY - PLAYER_HALF_HEIGHT;
 let playerVy = 0;
@@ -229,42 +240,27 @@ const imageList = {
     heart: 'heart.png'
 };
 
-// Музыка
 let bgMusic = null;
 
 function initMusic() {
     bgMusic = new Audio('music.mp3');
     bgMusic.loop = true;
-    bgMusic.volume = 0.1; // 10% громкости
-    // Автозапуск будет после взаимодействия с пользователем (по кнопке Start)
+    bgMusic.volume = 0.1;
 }
 
 function playMusic() {
     if (bgMusic && gameRunning && !gamePaused) {
-        bgMusic.play().catch(e => console.log("Music autoplay blocked, user interaction needed"));
+        bgMusic.play().catch(e => console.log("Music autoplay blocked"));
     }
 }
 
 function pauseMusic() {
-    if (bgMusic) {
-        bgMusic.pause();
-    }
+    if (bgMusic) bgMusic.pause();
 }
 
 function resumeMusic() {
     if (bgMusic && gameRunning && !gamePaused) {
-        bgMusic.play().catch(e => console.log("Music resume failed"));
-    }
-}
-
-function setMusicVolume(vol) {
-    if (bgMusic) bgMusic.volume = Math.min(1, Math.max(0, vol));
-}
-
-function toggleMusic() {
-    if (gameRunning && !gamePaused) {
-        if (bgMusic.paused) resumeMusic();
-        else pauseMusic();
+        bgMusic.play().catch(e => console.log("Music resume error"));
     }
 }
 
@@ -384,7 +380,7 @@ function updateFallingBoxes(deltaSec) {
     let anyFinished = false;
     for (let box of boxes) {
         if (!box.active) continue;
-        if (box.isFalling && box.fallTargetY !== undefined) {
+        if (box.isFalling && box.fallTargetY !== undefined && !box.isSliding) {
             const currentFallSpeed = BASE_FALL_SPEED_PX_SEC * boxFallSpeedMultiplier;
             let step = currentFallSpeed * deltaSec;
             const diff = box.fallTargetY - box.y;
@@ -470,7 +466,7 @@ function checkCollisionWithBoxes(deltaSec) {
                     }
                 }
             }
-            if (box.isFalling && box.fallTargetY > box.y) {
+            if (box.isFalling && box.fallTargetY > box.y && !box.isSliding) {
                 if (boxBottom > playerTop && box.y < playerY) {
                     if (damageCooldown <= 0 && !godMode) {
                         lives--;
@@ -511,7 +507,9 @@ function tryPushBox(box, direction, force = false) {
     pushCooldown = true;
     
     removeFromStack(box);
+    const wasFalling = box.isFalling;
     box.isFalling = false;
+    box.isSliding = true;
     
     const oldX = box.x;
     box.x = newX;
@@ -519,6 +517,7 @@ function tryPushBox(box, direction, force = false) {
     box.x = oldX;
     
     applyHorizontalSlide(box, newX, () => {
+        box.isSliding = false;
         startFalling(box, newTargetY);
         pushCooldown = false;
     });
@@ -698,7 +697,7 @@ function setPlayerSpeed(newSpeed) {
     if (playerSpeed === newSpeed) return;
     playerSpeed = newSpeed;
     document.getElementById('playerSpeedValue').innerText = playerSpeed.toFixed(1);
-    showToast(`🏃 Скорость: ${playerSpeed.toFixed(1)}`, true);
+    showToast(`🏃 Скорость движения: ${playerSpeed.toFixed(1)}`, true);
 }
 function playerSpeedUp() { if (gameRunning && !gamePaused) setPlayerSpeed(playerSpeed + 0.2); }
 function playerSpeedDown() { if (gameRunning && !gamePaused) setPlayerSpeed(playerSpeed - 0.2); }
@@ -713,6 +712,16 @@ function setBoxFallSpeed(mult) {
 function boxFallSpeedUp() { if (gameRunning && !gamePaused) setBoxFallSpeed(boxFallSpeedMultiplier + 0.05); }
 function boxFallSpeedDown() { if (gameRunning && !gamePaused) setBoxFallSpeed(boxFallSpeedMultiplier - 0.05); }
 
+function setJumpPower(val) {
+    let newVal = Math.min(-4, Math.max(-25, val));
+    if (jumpPower === newVal) return;
+    jumpPower = newVal;
+    document.getElementById('jumpPowerValue').innerText = jumpPower;
+    showToast(`🦘 Сила прыжка: ${jumpPower} (чем ниже, тем выше)`, true);
+}
+function jumpPowerUp() { if (gameRunning && !gamePaused) setJumpPower(jumpPower + 1); }
+function jumpPowerDown() { if (gameRunning && !gamePaused) setJumpPower(jumpPower - 1); }
+
 function initMarkers() { markers = DEFAULT_MARKERS.map(x=>({x})); updateBounds(); }
 function updateBounds() {
     if (!markers.length) { leftBound=0; rightBound=800; return; }
@@ -726,10 +735,23 @@ function spawnBox() {
     if (!gameRunning || gamePaused || exploding) return;
     const targetX = getRandomMarkerX() + BOX_SIZE/2;
     const key = getStackKey(targetX);
+    let slidingInColumn = false;
+    for (let box of boxes) {
+        if (box.isSliding && Math.abs(box.x - targetX) < BOX_SIZE-2) {
+            slidingInColumn = true;
+            break;
+        }
+    }
+    if (slidingInColumn) {
+        setTimeout(() => spawnBox(), 50);
+        return;
+    }
     const stackHeight = stacks.has(key) ? stacks.get(key).length : 0;
     if (stackHeight >= MAX_STACK) { gameOver(`Высота ${MAX_STACK}!`); return; }
     const targetY = getBoxBaseY() - stackHeight * BOX_SIZE;
-    const box = { x: targetX, y: 20, active: true, tint: null, isFalling: true, fallTargetY: targetY, fallStartY: 20 };
+    // Случайный цвет для ящика
+    const randomColor = BOX_COLORS[Math.floor(Math.random() * BOX_COLORS.length)];
+    const box = { x: targetX, y: 20, active: true, tint: null, color: randomColor, isFalling: true, isSliding: false, fallTargetY: targetY, fallStartY: 20 };
     boxes.push(box);
 }
 
@@ -771,7 +793,7 @@ function syncAllHeights() {
         playerVy = 0;
         grounded = true;
     }
-    showToast(`✅ Синхронизировано | Скорость падения: ${(BASE_FALL_SPEED_PX_SEC * boxFallSpeedMultiplier).toFixed(1)} px/сек`, true);
+    showToast(`✅ Синхронизировано | Сила прыжка: ${jumpPower}`, true);
 }
 
 function saveFullConfig() {
@@ -784,6 +806,7 @@ const SAVED_BOX_FALL_SPEED = ${boxFallSpeedMultiplier};
 const SAVED_HORIZONTAL_TOLERANCE = ${horizontalTolerance};
 const SAVED_VERTICAL_PUSH_TOLERANCE = ${verticalPushTolerance};
 const SAVED_PUSH_SPEED_MULTIPLIER = ${pushSpeedMultiplier};
+const SAVED_JUMP_POWER = ${jumpPower};
 // ===========================================`;
     navigator.clipboard.writeText(fullConfig).then(() => {
         showToast(`💾 Конфигурация скопирована`, true);
@@ -791,13 +814,14 @@ const SAVED_PUSH_SPEED_MULTIPLIER = ${pushSpeedMultiplier};
 }
 
 function saveToCode() {
-    const configCode = `// ===== НАСТРОЙКИ ТОЛКАНИЯ =====
+    const configCode = `// ===== НАСТРОЙКИ ТОЛКАНИЯ И ПРЫЖКА =====
 const SAVED_HORIZONTAL_TOLERANCE = ${horizontalTolerance};
 const SAVED_VERTICAL_PUSH_TOLERANCE = ${verticalPushTolerance};
 const SAVED_PUSH_SPEED_MULTIPLIER = ${pushSpeedMultiplier};
+const SAVED_JUMP_POWER = ${jumpPower};
 // ===========================================`;
     navigator.clipboard.writeText(configCode).then(() => {
-        showToast(`📋 Настройки толкания скопированы`, true);
+        showToast(`📋 Настройки скопированы`, true);
     }).catch(() => alert(`Скопируйте вручную`));
 }
 
@@ -817,7 +841,6 @@ function loadAssets(callback) {
         titleImgElement.onerror = () => { titleImgElement.style.display = 'none'; };
         titleImgElement.src = 'title.png';
     }
-    // Инициализация музыки
     initMusic();
 }
 
@@ -854,6 +877,7 @@ function fullRestart() {
     horizontalTolerance = SAVED_HORIZONTAL_TOLERANCE;
     verticalPushTolerance = SAVED_VERTICAL_PUSH_TOLERANCE;
     pushSpeedMultiplier = SAVED_PUSH_SPEED_MULTIPLIER;
+    jumpPower = SAVED_JUMP_POWER;
     
     document.getElementById('playerGroundValue').innerText = playerGroundY;
     document.getElementById('boxGroundValue').innerText = boxGroundY;
@@ -863,6 +887,7 @@ function fullRestart() {
     document.getElementById('horizCaptureValue').innerText = horizontalTolerance;
     document.getElementById('vertPushValue').innerText = verticalPushTolerance;
     document.getElementById('pushSpeedValue').innerText = pushSpeedMultiplier.toFixed(1);
+    document.getElementById('jumpPowerValue').innerText = jumpPower;
     
     playerX = markers.length ? markers[0].x + BOX_SIZE/2 : 200;
     playerY = playerGroundY - PLAYER_HALF_HEIGHT;
@@ -880,7 +905,7 @@ function fullRestart() {
         bgMusic.currentTime = 0;
         if (!gamePaused) bgMusic.play().catch(e=>console.log("Music play blocked"));
     }
-    showToast(`🔄 Рестарт | Жизни: ${lives} | Падение: ${(BASE_FALL_SPEED_PX_SEC * boxFallSpeedMultiplier).toFixed(1)} px/сек`);
+    showToast(`🔄 Рестарт | Прыжок: ${jumpPower} | Падение: ${(BASE_FALL_SPEED_PX_SEC * boxFallSpeedMultiplier).toFixed(1)} px/сек`);
 }
 
 let jumpRequested = false;
@@ -911,15 +936,12 @@ function drawHearts() {
     }
 }
 
-// Новая функция проверки, стоит ли игрок на каком-либо ящике
 function getStandingBox() {
     const feetY = playerY + PLAYER_HALF_HEIGHT;
-    // Проверяем все ящики
     for (let box of boxes) {
         const boxTop = box.y - BOX_SIZE/2;
         const boxLeft = box.x - BOX_SIZE/2;
         const boxRight = box.x + BOX_SIZE/2;
-        // Игрок должен перекрывать ящик по горизонтали хотя бы на 5 пикселей
         const overlapLeft = Math.max(0, Math.min(playerX + PLAYER_HALF_WIDTH, boxRight) - Math.max(playerX - PLAYER_HALF_WIDTH, boxLeft));
         if (overlapLeft >= 5) {
             const targetStandY = boxTop - standOnBoxOffset;
@@ -959,7 +981,6 @@ function gameLoop(nowMs) {
         forcePushDirection = 0;
     }
     
-    // Горизонтальные коллизии
     for (let box of boxes) {
         const boxLeft = box.x - BOX_SIZE/2, boxRight = box.x + BOX_SIZE/2;
         const boxTop = box.y - BOX_SIZE/2, boxBottom = box.y + BOX_SIZE/2;
@@ -971,7 +992,8 @@ function gameLoop(nowMs) {
     }
     
     if (jumpRequested && grounded && !jumpCd) {
-        playerVy = DEFAULT_JUMP_POWER * Math.sqrt(spawnSpeedMultiplier);
+        // Прыжок больше не зависит от spawnSpeedMultiplier
+        playerVy = jumpPower;
         grounded = false; jumpCd = true;
         setTimeout(() => { jumpCd = false; }, 350);
     }
@@ -982,7 +1004,6 @@ function gameLoop(nowMs) {
         playerY += playerVy; 
     }
     
-    // Проверка стояния на ящиках (улучшенная)
     const standingBox = getStandingBox();
     if (standingBox !== null) {
         const boxTop = standingBox.y - BOX_SIZE/2;
@@ -1005,7 +1026,7 @@ function gameLoop(nowMs) {
     if (!pushCooldown && !exploding && !forcePushActive && (moveLeft || moveRight)) {
         const dir = moveLeft ? -1 : 1;
         const targetBox = getBoxInFront(dir);
-        if (targetBox) tryPushBox(targetBox, dir, false);
+        if (targetBox && !targetBox.isSliding) tryPushBox(targetBox, dir, false);
     }
     
     updateFallingBoxes(deltaSec);
@@ -1031,7 +1052,36 @@ function updateParticles() { for (let i=particles.length-1;i>=0;i--) { let p=par
 function drawParticles() { for (let p of particles) { ctx.fillStyle=p.color; ctx.globalAlpha=Math.min(1,p.life*1.5); ctx.fillRect(p.x-p.size/2,p.y-p.size/2,p.size,p.size); } ctx.globalAlpha=1; }
 function drawBackground() { if (images.bg && images.bg.complete) ctx.drawImage(images.bg,0,0,W,H); else { ctx.fillStyle='#2a4a5a'; ctx.fillRect(0,0,W,H); ctx.fillStyle='#3a6a5a20'; ctx.fillRect(0, playerGroundY-2, W, 2); } }
 function drawMarkers() { if (!markersVisible) return; for (let m of markers) { ctx.fillStyle='rgba(255,0,0,0.25)'; ctx.fillRect(m.x,0,BOX_SIZE,H); ctx.strokeStyle='rgba(255,0,0,0.8)'; ctx.strokeRect(m.x,0,BOX_SIZE,H); } }
-function drawBoxes() { for (let box of boxes) { if (!box.active) continue; if (images.box && images.box.complete) ctx.drawImage(images.box, box.x-BOX_SIZE/2, box.y-BOX_SIZE/2, BOX_SIZE, BOX_SIZE); else { ctx.fillStyle=box.tint||'#ccaa66'; ctx.fillRect(box.x-BOX_SIZE/2,box.y-BOX_SIZE/2,BOX_SIZE,BOX_SIZE); ctx.strokeStyle='#886633'; ctx.strokeRect(box.x-BOX_SIZE/2,box.y-BOX_SIZE/2,BOX_SIZE,BOX_SIZE); } if (box.tint && box.tint!=='#ccaa66') { ctx.globalAlpha=0.6; ctx.fillStyle=box.tint; ctx.fillRect(box.x-BOX_SIZE/2,box.y-BOX_SIZE/2,BOX_SIZE,BOX_SIZE); ctx.globalAlpha=1; } } }
+function drawBoxes() { 
+    for (let box of boxes) { 
+        if (!box.active) continue; 
+        // Рисуем ящик с его цветом
+        if (images.box && images.box.complete) {
+            // Если есть текстура, рисуем её поверх
+            ctx.drawImage(images.box, box.x-BOX_SIZE/2, box.y-BOX_SIZE/2, BOX_SIZE, BOX_SIZE);
+            // Добавляем цветную накладку (полупрозрачную) поверх текстуры
+            if (box.color) {
+                ctx.globalAlpha = 0.6;
+                ctx.fillStyle = box.color;
+                ctx.fillRect(box.x-BOX_SIZE/2, box.y-BOX_SIZE/2, BOX_SIZE, BOX_SIZE);
+                ctx.globalAlpha = 1;
+            }
+        } else {
+            // Без текстуры — просто цвет
+            ctx.fillStyle = box.color || '#ccaa66';
+            ctx.fillRect(box.x-BOX_SIZE/2, box.y-BOX_SIZE/2, BOX_SIZE, BOX_SIZE);
+            ctx.strokeStyle = '#886633';
+            ctx.strokeRect(box.x-BOX_SIZE/2, box.y-BOX_SIZE/2, BOX_SIZE, BOX_SIZE);
+        }
+        // Эффект подсветки при толкании
+        if (box.tint && box.tint !== '#ccaa66') { 
+            ctx.globalAlpha = 0.6; 
+            ctx.fillStyle = box.tint; 
+            ctx.fillRect(box.x-BOX_SIZE/2, box.y-BOX_SIZE/2, BOX_SIZE, BOX_SIZE); 
+            ctx.globalAlpha = 1; 
+        } 
+    } 
+}
 function drawPlayer() { let frame='run1'; if (grounded && (leftPressed||rightPressed)) frame=`run${Math.floor(Date.now()/100)%4+1}`; const img=images[frame]; if (img && img.complete) { const w=img.width*0.24, h=img.height*0.24; ctx.save(); if (lastDir==='left') { ctx.translate(playerX,playerY); ctx.scale(-1,1); ctx.drawImage(img,-w/2,-h/2,w,h); } else ctx.drawImage(img,playerX-w/2,playerY-h/2,w,h); ctx.restore(); } else { ctx.fillStyle='#ffaa66'; ctx.beginPath(); ctx.ellipse(playerX, playerY, PLAYER_HALF_WIDTH, PLAYER_HALF_HEIGHT, 0, 0, Math.PI*2); ctx.fill(); } }
 function drawUI() { 
     ctx.font='bold 22px monospace'; 
@@ -1062,7 +1112,6 @@ function resizeCanvas() {
 }
 window.addEventListener('resize', resizeCanvas);
 
-// Авто-пауза при сворачивании/переключении вкладки
 function handleVisibilityChange() {
     if (!gameRunning) return;
     if (document.hidden) {
@@ -1100,6 +1149,7 @@ function initGame() {
     horizontalTolerance = SAVED_HORIZONTAL_TOLERANCE;
     verticalPushTolerance = SAVED_VERTICAL_PUSH_TOLERANCE;
     pushSpeedMultiplier = SAVED_PUSH_SPEED_MULTIPLIER;
+    jumpPower = SAVED_JUMP_POWER;
     lives = 3;
     damageCooldown = 0;
     shakeAmount = 0;
@@ -1111,6 +1161,7 @@ function initGame() {
     document.getElementById('horizCaptureValue').innerText = horizontalTolerance;
     document.getElementById('vertPushValue').innerText = verticalPushTolerance;
     document.getElementById('pushSpeedValue').innerText = pushSpeedMultiplier.toFixed(1);
+    document.getElementById('jumpPowerValue').innerText = jumpPower;
     gameRunning = true; gamePaused = false; score = 0;
     leftPressed = false; rightPressed = false;
     forcePushActive = false; forcePushDirection = 0;
@@ -1128,13 +1179,12 @@ function initGame() {
     if (animationFrameId) cancelAnimationFrame(animationFrameId);
     lastTimestamp = 0;
     animationFrameId = requestAnimationFrame(gameLoop);
-    // Запуск музыки
     if (bgMusic) {
         bgMusic.currentTime = 0;
         bgMusic.volume = 0.1;
-        bgMusic.play().catch(e => console.log("Music autoplay blocked, user interaction needed"));
+        bgMusic.play().catch(e => console.log("Music autoplay blocked"));
     }
-    showToast(`🎮 Игра запущена | Музыка 10%`);
+    showToast(`🎮 Ящики стали цветными! | Сила прыжка: ${jumpPower} | Скорость: ${playerSpeed}`);
 }
 
 function setupControls() {
@@ -1200,6 +1250,7 @@ function setupControls() {
     document.getElementById('btnHorizCaptureUp').onclick = horizCaptureUp; document.getElementById('btnHorizCaptureDown').onclick = horizCaptureDown;
     document.getElementById('btnVertPushUp').onclick = vertPushUp; document.getElementById('btnVertPushDown').onclick = vertPushDown;
     document.getElementById('btnPushSpeedUp').onclick = pushSpeedUp; document.getElementById('btnPushSpeedDown').onclick = pushSpeedDown;
+    document.getElementById('btnJumpPowerUp').onclick = jumpPowerUp; document.getElementById('btnJumpPowerDown').onclick = jumpPowerDown;
     
     const speedBtns = {1:'btnSpeed1',2:'btnSpeed2',4:'btnSpeed4',8:'btnSpeed8'};
     for(let [spd,id] of Object.entries(speedBtns)) { 
