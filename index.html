@@ -3,291 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Складской грузчик — адаптивная версия</title>
+    <title>Складской грузчик — исправлены сенсорные кнопки</title>
     <style>
-        * {
-            user-select: none;
-            touch-action: manipulation;
-            box-sizing: border-box;
-        }
-        body {
-            margin: 0;
-            min-height: 100vh;
-            background: #1a2a32;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-family: monospace;
-            overflow: hidden;
-            position: fixed;
-            width: 100%;
-            height: 100%;
-        }
-        .game-container {
-            position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-            height: 100%;
-        }
-        canvas {
-            display: block;
-            box-shadow: 0 0 20px rgba(0,0,0,0.3);
-            cursor: pointer;
-            background: #2a4a5a;
-            width: auto;
-            height: auto;
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-        }
-        .ui {
-            position: fixed;
-            top: 10px;
-            left: 0;
-            right: 0;
-            display: flex;
-            justify-content: center;
-            gap: 8px;
-            flex-wrap: wrap;
-            z-index: 100;
-            pointer-events: none;
-            padding: 0 8px;
-        }
-        .ui button, .score, .speed-panel, .height-controls, .capture-panel, .push-speed-panel {
-            pointer-events: auto;
-            background: rgba(0,0,0,0.8);
-            border: 1px solid rgba(255,255,255,0.4);
-            border-radius: 40px;
-            color: white;
-            font-size: 13px;
-            font-weight: bold;
-            padding: 6px 12px;
-            cursor: pointer;
-            font-family: monospace;
-            backdrop-filter: blur(4px);
-            white-space: nowrap;
-        }
-        .score {
-            background: rgba(0,0,0,0.8);
-            border-radius: 40px;
-            padding: 6px 16px;
-            color: #ffdd88;
-            font-size: 18px;
-            font-weight: bold;
-            border: 1px solid gold;
-        }
-        .speed-panel, .capture-panel, .push-speed-panel {
-            display: inline-flex;
-            gap: 5px;
-            background: rgba(0,0,0,0.6);
-            border-radius: 40px;
-            padding: 4px 8px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .speed-panel span, .capture-panel span, .push-speed-panel span {
-            font-size: 11px;
-            color: #aaffdd;
-            margin: 0 4px;
-        }
-        .speed-panel button, .capture-panel button, .push-speed-panel button {
-            background: #ff8800;
-            border: none;
-            border-radius: 30px;
-            padding: 4px 10px;
-            font-size: 12px;
-            min-width: 38px;
-        }
-        .speed-panel .active {
-            background: #00aa44;
-        }
-        .height-controls {
-            display: inline-flex;
-            gap: 5px;
-            background: rgba(0,0,0,0.6);
-            border-radius: 40px;
-            padding: 4px 8px;
-            align-items: center;
-        }
-        .height-controls button, .capture-panel button, .push-speed-panel button {
-            background: #4488ff;
-            border: none;
-            border-radius: 30px;
-            padding: 4px 10px;
-            font-size: 14px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        .height-indicator {
-            font-size: 10px;
-            background: #000000aa;
-            border-radius: 20px;
-            padding: 2px 6px;
-            margin-left: 3px;
-        }
-        .save-controls {
-            background: #4a2a2a80 !important;
-        }
-        .save-controls button {
-            background: #ff8844 !important;
-        }
-        .sync-btn {
-            background: #44aa88 !important;
-        }
-        .save-to-code-btn {
-            background: #ff6644 !important;
-        }
-        .touch-panel {
-            position: fixed;
-            bottom: 20px;
-            left: 0;
-            right: 0;
-            display: flex;
-            justify-content: space-between;
-            padding: 0 20px;
-            pointer-events: none;
-            z-index: 100;
-        }
-        .move-group, .action-group {
-            display: flex;
-            gap: 20px;
-            background: rgba(0,0,0,0.4);
-            padding: 8px 20px;
-            border-radius: 100px;
-            backdrop-filter: blur(8px);
-            pointer-events: auto;
-        }
-        .touch-panel button {
-            background: rgba(30,40,60,0.95);
-            border: 2px solid rgba(255,255,255,0.5);
-            border-radius: 60px;
-            color: white;
-            font-size: 28px;
-            width: 70px;
-            height: 70px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .touch-panel button:active {
-            transform: scale(0.95);
-            background: #4a6a8a;
-        }
+        * { user-select: none; touch-action: manipulation; box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; background: #1a2a32; display: flex; justify-content: center; align-items: center; font-family: monospace; overflow: hidden; position: fixed; width: 100%; height: 100%; }
+        .game-container { position: relative; display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; }
+        canvas { display: block; box-shadow: 0 0 20px rgba(0,0,0,0.3); cursor: pointer; background: #2a4a5a; width: auto; height: auto; max-width: 100%; max-height: 100%; object-fit: contain; }
+        .ui { position: fixed; top: 10px; left: 0; right: 0; display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; z-index: 100; pointer-events: none; padding: 0 8px; }
+        .ui button, .score, .speed-panel, .height-controls, .capture-panel, .push-speed-panel { pointer-events: auto; background: rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.4); border-radius: 40px; color: white; font-size: 13px; font-weight: bold; padding: 6px 12px; cursor: pointer; font-family: monospace; backdrop-filter: blur(4px); white-space: nowrap; }
+        .score { background: rgba(0,0,0,0.8); border-radius: 40px; padding: 6px 16px; color: #ffdd88; font-size: 18px; font-weight: bold; border: 1px solid gold; }
+        .speed-panel, .capture-panel, .push-speed-panel { display: inline-flex; gap: 5px; background: rgba(0,0,0,0.6); border-radius: 40px; padding: 4px 8px; align-items: center; flex-wrap: wrap; }
+        .speed-panel span, .capture-panel span, .push-speed-panel span { font-size: 11px; color: #aaffdd; margin: 0 4px; }
+        .speed-panel button, .capture-panel button, .push-speed-panel button { background: #ff8800; border: none; border-radius: 30px; padding: 4px 10px; font-size: 12px; min-width: 38px; }
+        .speed-panel .active { background: #00aa44; }
+        .height-controls { display: inline-flex; gap: 5px; background: rgba(0,0,0,0.6); border-radius: 40px; padding: 4px 8px; align-items: center; }
+        .height-controls button, .capture-panel button, .push-speed-panel button { background: #4488ff; border: none; border-radius: 30px; padding: 4px 10px; font-size: 14px; font-weight: bold; cursor: pointer; }
+        .height-indicator { font-size: 10px; background: #000000aa; border-radius: 20px; padding: 2px 6px; margin-left: 3px; }
+        .save-controls { background: #4a2a2a80 !important; }
+        .save-controls button { background: #ff8844 !important; }
+        .sync-btn { background: #44aa88 !important; }
+        .save-to-code-btn { background: #ff6644 !important; }
+        .touch-panel { position: fixed; bottom: 20px; left: 0; right: 0; display: flex; justify-content: space-between; padding: 0 20px; pointer-events: none; z-index: 100; }
+        .move-group, .action-group { display: flex; gap: 20px; background: rgba(0,0,0,0.4); padding: 8px 20px; border-radius: 100px; backdrop-filter: blur(8px); pointer-events: auto; }
+        .touch-panel button { background: rgba(30,40,60,0.95); border: 2px solid rgba(255,255,255,0.5); border-radius: 60px; color: white; font-size: 28px; width: 70px; height: 70px; cursor: pointer; display: flex; align-items: center; justify-content: center; touch-action: manipulation; }
+        .touch-panel button:active { transform: scale(0.95); background: #4a6a8a; }
         @media (max-width: 650px) {
-            .touch-panel button {
-                width: 55px;
-                height: 55px;
-                font-size: 24px;
-            }
-            .ui button, .score, .speed-panel, .height-controls, .capture-panel, .push-speed-panel {
-                font-size: 9px;
-                padding: 4px 8px;
-            }
-            .speed-panel span, .capture-panel span, .push-speed-panel span {
-                font-size: 8px;
-            }
+            .touch-panel button { width: 55px; height: 55px; font-size: 24px; }
+            .ui button, .score, .speed-panel, .height-controls, .capture-panel, .push-speed-panel { font-size: 9px; padding: 4px 8px; }
+            .speed-panel span, .capture-panel span, .push-speed-panel span { font-size: 8px; }
         }
-        .info {
-            position: fixed;
-            bottom: 10px;
-            left: 10px;
-            background: rgba(0,0,0,0.6);
-            padding: 4px 8px;
-            border-radius: 8px;
-            color: #0f0;
-            font-size: 10px;
-            pointer-events: none;
-            z-index: 100;
-        }
-        .title-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #1a2a32;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            text-align: center;
-            padding: 20px;
-        }
-        .title-screen h1 {
-            color: white;
-            font-size: 8vw;
-            text-shadow: 0 0 10px #ffaa44;
-            margin-bottom: 30px;
-        }
-        .title-screen img {
-            max-width: 80%;
-            max-height: 40vh;
-            margin-bottom: 30px;
-            object-fit: contain;
-        }
-        .title-screen button {
-            background: #ffaa44;
-            border: none;
-            font-size: 5vw;
-            padding: 12px 32px;
-            border-radius: 40px;
-            cursor: pointer;
-            font-weight: bold;
-            font-family: monospace;
-            margin: 10px;
-        }
-        .toast-msg {
-            position: fixed;
-            bottom: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #00aa44dd;
-            color: white;
-            padding: 8px 20px;
-            border-radius: 40px;
-            font-size: 14px;
-            z-index: 2000;
-            backdrop-filter: blur(8px);
-            pointer-events: none;
-            animation: fadeOut 2s forwards;
-            white-space: nowrap;
-        }
-        @keyframes fadeOut {
-            0% { opacity: 1; }
-            70% { opacity: 1; }
-            100% { opacity: 0; visibility: hidden; }
-        }
-        .separator {
-            width: 1px;
-            height: 24px;
-            background: rgba(255,255,255,0.3);
-            margin: 0 4px;
-        }
-        .capture-value {
-            background: #000000aa;
-            border-radius: 20px;
-            padding: 2px 8px;
-            min-width: 40px;
-            text-align: center;
-            font-weight: bold;
-            color: #ffdd99;
-        }
-        .horiz-panel {
-            background: #3a2a5a80 !important;
-        }
-        .vert-panel {
-            background: #2a3a5a80 !important;
-        }
-        .push-speed-panel {
-            background: #5a3a2a80 !important;
-        }
-        .hidden-panel {
-            display: none !important;
-        }
+        .info { position: fixed; bottom: 10px; left: 10px; background: rgba(0,0,0,0.6); padding: 4px 8px; border-radius: 8px; color: #0f0; font-size: 10px; pointer-events: none; z-index: 100; }
+        .title-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1a2a32; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; text-align: center; padding: 20px; }
+        .title-screen h1 { color: white; font-size: 8vw; text-shadow: 0 0 10px #ffaa44; margin-bottom: 30px; }
+        .title-screen img { max-width: 80%; max-height: 40vh; margin-bottom: 30px; object-fit: contain; }
+        .title-screen button { background: #ffaa44; border: none; font-size: 5vw; padding: 12px 32px; border-radius: 40px; cursor: pointer; font-weight: bold; font-family: monospace; margin: 10px; }
+        .toast-msg { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #00aa44dd; color: white; padding: 8px 20px; border-radius: 40px; font-size: 14px; z-index: 2000; backdrop-filter: blur(8px); pointer-events: none; animation: fadeOut 2s forwards; white-space: nowrap; }
+        @keyframes fadeOut { 0% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
+        .separator { width: 1px; height: 24px; background: rgba(255,255,255,0.3); margin: 0 4px; }
+        .capture-value { background: #000000aa; border-radius: 20px; padding: 2px 8px; min-width: 40px; text-align: center; font-weight: bold; color: #ffdd99; }
+        .horiz-panel { background: #3a2a5a80 !important; }
+        .vert-panel { background: #2a3a5a80 !important; }
+        .push-speed-panel { background: #5a3a2a80 !important; }
+        .hidden-panel { display: none !important; }
     </style>
 </head>
 <body>
@@ -377,7 +134,7 @@
     <div class="move-group"><button id="btnLeft">◀</button><button id="btnRight">▶</button></div>
     <div class="action-group"><button id="btnJump">▲</button></div>
 </div>
-<div class="info" id="infoPanel">❤️ Жизни: 3 | Режим "Только игра" - нажмите 🔘 UI для настроек</div>
+<div class="info" id="infoPanel">❤️ Жизни: 3 | Удерживайте движение + прыжок — работают вместе</div>
 <div class="title-screen" id="titleScreen">
     <h1>📦 СКЛАДСКОЙ ГРУЗЧИК</h1>
     <img id="titleImage" src="title.png" alt="Title" style="display: none;">
@@ -1015,7 +772,6 @@ function loadAssets(callback) {
         img.src = src;
         images[key] = img;
     }
-    // Показываем title.png на стартовом экране, если загрузится
     const titleImgElement = document.getElementById('titleImage');
     if (titleImgElement) {
         titleImgElement.onload = () => { titleImgElement.style.display = 'block'; };
@@ -1279,10 +1035,11 @@ function initGame() {
     if (animationFrameId) cancelAnimationFrame(animationFrameId);
     lastTimestamp = 0;
     animationFrameId = requestAnimationFrame(gameLoop);
-    showToast(`🎮 Режим "Только игра" | 🔘 UI для настроек`);
+    showToast(`🎮 Удерживайте движение + прыжок — работают вместе`);
 }
 
 function setupControls() {
+    // Клавиатура
     window.addEventListener('keydown', (e) => {
         if(e.key === 'ArrowLeft') leftPressed=true;
         if(e.key === 'ArrowRight') rightPressed=true;
@@ -1299,9 +1056,26 @@ function setupControls() {
         if(e.key === 'ArrowRight') rightPressed=false;
         if(e.key === 'z' || e.key === 'Z') { forcePushActive = false; forcePushDirection = 0; }
     });
-    document.getElementById('btnLeft').addEventListener('touchstart',e=>{e.preventDefault(); leftPressed=true;}); document.getElementById('btnLeft').addEventListener('touchend',e=>{e.preventDefault(); leftPressed=false;}); document.getElementById('btnLeft').addEventListener('mousedown',()=>leftPressed=true); document.getElementById('btnLeft').addEventListener('mouseup',()=>leftPressed=false);
-    document.getElementById('btnRight').addEventListener('touchstart',e=>{e.preventDefault(); rightPressed=true;}); document.getElementById('btnRight').addEventListener('touchend',e=>{e.preventDefault(); rightPressed=false;}); document.getElementById('btnRight').addEventListener('mousedown',()=>rightPressed=true); document.getElementById('btnRight').addEventListener('mouseup',()=>rightPressed=false);
-    document.getElementById('btnJump').addEventListener('click', jump); 
+
+    // Сенсорные кнопки (поддержка одновременного нажатия)
+    const btnLeft = document.getElementById('btnLeft');
+    const btnRight = document.getElementById('btnRight');
+    const btnJump = document.getElementById('btnJump');
+
+    btnLeft.addEventListener('touchstart', (e) => { e.preventDefault(); leftPressed = true; });
+    btnLeft.addEventListener('touchend', (e) => { e.preventDefault(); leftPressed = false; });
+    btnLeft.addEventListener('mousedown', () => leftPressed = true);
+    btnLeft.addEventListener('mouseup', () => leftPressed = false);
+
+    btnRight.addEventListener('touchstart', (e) => { e.preventDefault(); rightPressed = true; });
+    btnRight.addEventListener('touchend', (e) => { e.preventDefault(); rightPressed = false; });
+    btnRight.addEventListener('mousedown', () => rightPressed = true);
+    btnRight.addEventListener('mouseup', () => rightPressed = false);
+
+    btnJump.addEventListener('touchstart', (e) => { e.preventDefault(); jump(); });
+    btnJump.addEventListener('click', jump);
+
+    // Остальные кнопки
     document.getElementById('btnPause').onclick = () => gamePaused = !gamePaused;
     document.getElementById('btnRestartGame').onclick = () => fullRestart();
     document.getElementById('btnToggleUI').onclick = toggleAdvancedUI;
@@ -1319,8 +1093,20 @@ function setupControls() {
     document.getElementById('btnHorizCaptureUp').onclick = horizCaptureUp; document.getElementById('btnHorizCaptureDown').onclick = horizCaptureDown;
     document.getElementById('btnVertPushUp').onclick = vertPushUp; document.getElementById('btnVertPushDown').onclick = vertPushDown;
     document.getElementById('btnPushSpeedUp').onclick = pushSpeedUp; document.getElementById('btnPushSpeedDown').onclick = pushSpeedDown;
+    
     const speedBtns = {1:'btnSpeed1',2:'btnSpeed2',4:'btnSpeed4',8:'btnSpeed8'};
-    for(let [spd,id] of Object.entries(speedBtns)) { document.getElementById(id).onclick = () => { spawnSpeedMultiplier = Number(spd); document.querySelectorAll('.speed-panel .active').forEach(btn=>btn.classList.remove('active')); document.getElementById(id).classList.add('active'); if(spawnInterval){ clearInterval(spawnInterval); spawnInterval = setInterval(()=>spawnBox(), BASE_SPAWN_DELAY / spawnSpeedMultiplier); } showToast(`⚡ Скорость спавна x${spawnSpeedMultiplier}`); }; }
+    for(let [spd,id] of Object.entries(speedBtns)) { 
+        document.getElementById(id).onclick = () => { 
+            spawnSpeedMultiplier = Number(spd); 
+            document.querySelectorAll('.speed-panel .active').forEach(btn=>btn.classList.remove('active')); 
+            document.getElementById(id).classList.add('active'); 
+            if(spawnInterval){ 
+                clearInterval(spawnInterval); 
+                spawnInterval = setInterval(()=>spawnBox(), BASE_SPAWN_DELAY / spawnSpeedMultiplier); 
+            } 
+            showToast(`⚡ Скорость спавна x${spawnSpeedMultiplier}`); 
+        }; 
+    }
 }
 
 window.onload = () => { 
