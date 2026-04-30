@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Складской грузчик — оптимизированный спавн</title>
+    <title>Складской грузчик — box.png</title>
     <style>
         *{user-select:none;touch-action:manipulation;box-sizing:border-box}
         body{margin:0;min-height:100vh;background:#1a2a32;display:flex;justify-content:center;align-items:center;font-family:monospace;overflow:hidden;position:fixed;width:100%;height:100%}
@@ -77,13 +77,12 @@
 </div>
 
 <script>
-// ВАША ПОЛНАЯ КОНФИГУРАЦИЯ (скорость 50, падение 0.7, прыжок -105, гравитация 130)
+// НАСТРОЙКИ (скорость 50, падение 0.7, прыжок -105, гравитация 130)
 const DEFAULTS = {
     playerGroundY:360, boxGroundY:370, standOffset:12, playerSpeed:50, boxFallSpeed:0.7,
     horizTolerance:5, vertPushTolerance:10, pushSpeedMult:0.2, jumpPower:-105, gravity:130
 };
 const W=800, H=400, BOX=38, MAX_STACK=8, WIN=16;
-// Базовая задержка при fallMult=1.0. При fallMult=0.7 задержка станет ~3142 мс
 const BASE_SPAWN_DELAY = 2200;
 const MARKERS = [97,135,173,211,249,287,325,363,401,439,477,515,553,591,629,667];
 const PLAYER_W=32, PLAYER_H=52, PHW=PLAYER_W/2, PHH=PLAYER_H/2;
@@ -103,7 +102,7 @@ let images={}, bgMusic=null;
 let blockedKeys = new Set();
 let colorMode = 0;
 let fps = 60, frameCount = 0, lastFpsUpdate = 0;
-let lastSpawnMarkerIndex = -1; // для предотвращения повторного спавна в тот же маркер подряд
+let lastSpawnMarkerIndex = -1;
 
 function showToast(msg, ok=true){ let d=document.createElement('div'); d.className='toast-msg'; d.textContent=msg; d.style.background=ok?'#00aa44dd':'#ff6644dd'; document.body.appendChild(d); setTimeout(()=>d.remove(),2000);}
 function getBoxBaseY(){ return boxGroundY-BOX/2; }
@@ -151,21 +150,14 @@ function damageShake(){ shake=8; setTimeout(()=>{shake=0;},300); }
 function initMarkers(){ markers=MARKERS.map(x=>({x})); Lbound=markers[0].x; Rbound=markers[markers.length-1].x+BOX; }
 function getRandomX(){ return markers.length?markers[Math.floor(Math.random()*markers.length)].x:400; }
 
-// НОВАЯ ФУНКЦИЯ ВЫБОРА ПОЗИЦИИ С УЧЁТОМ ЗАПОЛНЕННОСТИ
 function getSpawnPosition() {
-    // Собираем индексы маркеров, где высота стека < MAX_STACK
     let available = [];
     for (let i = 0; i < markers.length; i++) {
         let key = stackKey(markers[i].x + BOX/2);
         let stackHeight = stacks.has(key) ? stacks.get(key).length : 0;
         if (stackHeight < MAX_STACK) available.push(i);
     }
-    if (available.length === 0) {
-        // Все стопки заполнены — игра проиграна
-        gameOver("Все стопки переполнены!");
-        return null;
-    }
-    // Предпочитаем не спавнить в тот же маркер, что и прошлый раз, если есть альтернатива
+    if (available.length === 0) { gameOver("Все стопки переполнены!"); return null; }
     let chosenIndex;
     if (available.length > 1 && available.includes(lastSpawnMarkerIndex)) {
         let other = available.filter(i => i !== lastSpawnMarkerIndex);
@@ -313,12 +305,10 @@ function checkDamage(delta){
 
 function getStandingBox(){ let feet=playerY+PHH; for(let b of boxes){ let top=b.y-BOX/2, left=b.x-BOX/2, right=b.x+BOX/2; if(Math.max(0,Math.min(playerX+PHW,right)-Math.max(playerX-PHW,left))>=5){ let standY=top-standOffset; if(feet>=standY-5 && feet<=standY+8 && playerVy>=0) return b; } } return null; }
 
-// НОВАЯ ФУНКЦИЯ СПАВНА С УМНЫМ ВЫБОРОМ ПОЗИЦИИ
 function spawnBox(){ 
     if(!gameRunning||gamePaused||exploding) return; 
     let x = getSpawnPosition();
-    if (x === null) return; // игра закончилась из-за переполнения
-    
+    if (x === null) return;
     let key = stackKey(x); 
     if(blockedKeys.has(key)){ setTimeout(()=>spawnBox(),100); return; }
     for(let b of boxes) if(b.isSliding && Math.abs(b.x-x)<BOX-2){ setTimeout(()=>spawnBox(),50); return; } 
@@ -385,11 +375,21 @@ function draw(){
     ctx.clearRect(0,0,W,H); ctx.fillStyle='#2a4a5a'; ctx.fillRect(0,0,W,H); 
     if(images.bg && images.bg.complete) ctx.drawImage(images.bg,0,0,W,H);
     if(markersVis) for(let m of markers){ ctx.fillStyle='rgba(255,0,0,0.25)'; ctx.fillRect(m.x,0,BOX,H); ctx.strokeStyle='rgba(255,0,0,0.8)'; ctx.strokeRect(m.x,0,BOX,H); }
+    
+    // Отрисовка ящиков: используем текстуру box.png если загружена, иначе цветной квадрат
     for(let b of boxes) if(b.active){ 
-        ctx.fillStyle=getBoxColor(b); ctx.fillRect(b.x-BOX/2,b.y-BOX/2,BOX,BOX); 
-        ctx.strokeStyle='#886633'; ctx.strokeRect(b.x-BOX/2,b.y-BOX/2,BOX,BOX); 
+        if(images.box && images.box.complete){
+            ctx.drawImage(images.box, b.x-BOX/2, b.y-BOX/2, BOX, BOX);
+            // Дополнительно можно добавить обводку или цветовой оттенок по желанию, но оставим чистую текстуру
+        } else {
+            ctx.fillStyle = getBoxColor(b);
+            ctx.fillRect(b.x-BOX/2, b.y-BOX/2, BOX, BOX);
+            ctx.strokeStyle = '#886633';
+            ctx.strokeRect(b.x-BOX/2, b.y-BOX/2, BOX, BOX);
+        }
     }
     
+    // Персонаж
     let frame = (grounded && (left||right)) ? `run${Math.floor(Date.now()/100)%4+1}` : 'run1';
     let img = images[frame];
     if(img && img.complete){
@@ -458,13 +458,12 @@ function fullRestart(){
     updateParamDisplays();
     document.querySelectorAll('.speed-panel .active').forEach(b=>b.classList.remove('active')); document.getElementById('btnSpeed1').classList.add('active');
     gameRunning=true;
-    // НОВАЯ ЗАДЕРЖКА: базовая / fallMult
     let delay = BASE_SPAWN_DELAY / fallMult;
     spawnInt = setInterval(()=>spawnBox(), delay);
     lastTime=0; lastFpsUpdate = performance.now(); frameCount = 0;
     animId=requestAnimationFrame(gameLoop);
     if(bgMusic){ bgMusic.currentTime=0; if(!gamePaused) bgMusic.play().catch(e=>{}); }
-    showToast(`🔄 Спавн ящиков каждые ${Math.round(delay)} мс, умный выбор позиции`);
+    showToast(`🔄 Ящики с текстурой box.png, спавн каждые ${Math.round(delay)} мс`);
 }
 function updateParamDisplays(){
     document.getElementById('playerGroundValue').innerText=playerGroundY;
@@ -479,20 +478,13 @@ function updateParamDisplays(){
     document.getElementById('gravityValue').innerText=gravity.toFixed(1);
     document.getElementById('scoreBoard').innerHTML=`ОЧКИ: ${score}`;
 }
-function initGame(){ fullRestart(); document.getElementById('titleScreen').style.display='none'; document.getElementById('ui').style.display='flex'; document.getElementById('touchPanel').style.display='flex'; document.getElementById('advancedPanels').style.display='none'; resizeCanvas(); showToast(`✅ Оптимизированный спавн: ящики не лезут в заполненные ряды`); }
+function initGame(){ fullRestart(); document.getElementById('titleScreen').style.display='none'; document.getElementById('ui').style.display='flex'; document.getElementById('touchPanel').style.display='flex'; document.getElementById('advancedPanels').style.display='none'; resizeCanvas(); showToast(`✅ Используется box.png`); }
 function syncAllHeights(){ if(!gameRunning) return; let all=[...boxes]; stacks.clear(); for(let b of all){ let k=stackKey(b.x); if(!stacks.has(k)) stacks.set(k,[]); stacks.get(k).push(b); } for(let s of stacks.values()){ s.sort((a,b)=>b.y-a.y); for(let i=0;i<s.length;i++) s[i].y=getBoxBaseY()-i*BOX; } let feet=playerY+PHH; for(let b of boxes){ let top=b.y-BOX/2; if(Math.abs(feet-top)<15 && playerX+PHW>b.x-BOX/2 && playerX-PHW<b.x+BOX/2){ playerY=top-standOffset-PHH; playerVy=0; grounded=true; break; } } if(!grounded && playerY+PHH>playerGroundY){ playerY=playerGroundY-PHH; playerVy=0; grounded=true; } showToast(`✅ Синхронизировано`); }
 function saveFullConfig(){ let cfg=`// ПОЛНАЯ КОНФИГУРАЦИЯ\nconst SAVED_PLAYER_GROUND_Y=${playerGroundY};\nconst SAVED_BOX_GROUND_Y=${boxGroundY};\nconst SAVED_STAND_OFFSET=${standOffset};\nconst SAVED_PLAYER_SPEED=${playerSpeed};\nconst SAVED_BOX_FALL_SPEED=${fallMult};\nconst SAVED_HORIZONTAL_TOLERANCE=${horizTol};\nconst SAVED_VERTICAL_PUSH_TOLERANCE=${vertTol};\nconst SAVED_PUSH_SPEED_MULTIPLIER=${pushMult};\nconst SAVED_JUMP_POWER=${jumpPower};\nconst SAVED_GRAVITY=${gravity};\n`; navigator.clipboard.writeText(cfg).then(()=>showToast(`💾 Конфигурация скопирована`)); }
 function saveToCode(){ let cfg=`// НАСТРОЙКИ ДВИЖЕНИЯ\nconst SAVED_HORIZONTAL_TOLERANCE=${horizTol};\nconst SAVED_VERTICAL_PUSH_TOLERANCE=${vertTol};\nconst SAVED_PUSH_SPEED_MULTIPLIER=${pushMult};\nconst SAVED_JUMP_POWER=${jumpPower};\nconst SAVED_GRAVITY=${gravity};\n`; navigator.clipboard.writeText(cfg).then(()=>showToast(`📋 Настройки скопированы`)); }
 function setPlayerSpeed(v){ playerSpeed=Math.min(80,Math.max(1,v)); document.getElementById('playerSpeedValue').innerText=playerSpeed.toFixed(1); showToast(`🏃 Скорость: ${playerSpeed.toFixed(1)}`);}
 function setFall(v){ fallMult=Math.min(3,Math.max(0.2,v)); document.getElementById('boxFallSpeedValue').innerText=fallMult.toFixed(2); showToast(`📦 Падение: ${(FALL_BASE*fallMult).toFixed(1)} px/с`); 
-    // перезапускаем интервал спавна с новой задержкой
-    if(spawnInt && gameRunning){
-        clearInterval(spawnInt);
-        let delay = BASE_SPAWN_DELAY / fallMult;
-        spawnInt = setInterval(()=>spawnBox(), delay);
-        showToast(`⏱️ Интервал спавна изменён на ${Math.round(delay)} мс`);
-    }
-}
+    if(spawnInt && gameRunning){ clearInterval(spawnInt); let delay = BASE_SPAWN_DELAY / fallMult / spawnMult; spawnInt=setInterval(()=>spawnBox(),delay); showToast(`⏱️ Интервал спавна изменён на ${Math.round(delay)} мс`); } }
 function setJump(v){ jumpPower=Math.min(-15,Math.max(-200,v)); document.getElementById('jumpPowerValue').innerText=jumpPower; showToast(`🦘 Сила прыжка: ${jumpPower}`);}
 function setGravity(v){ gravity = Math.min(350, Math.max(20, v)); document.getElementById('gravityValue').innerText=gravity.toFixed(1); showToast(`🌎 Гравитация: ${gravity.toFixed(1)}`); }
 function setHoriz(v){ horizTol=Math.min(35,Math.max(2,v)); document.getElementById('horizCaptureValue').innerText=horizTol; showToast(`↔️ Горизонт. зона: ${horizTol}`);}
@@ -503,7 +495,7 @@ function toggleUI(){
     if(p.style.display==='none'){ p.style.display='flex'; showToast("🔘 Расширенный интерфейс включён"); updateParamDisplays(); }
     else { p.style.display='none'; showToast("🔘 Расширенный интерфейс скрыт"); updateParamDisplays(); }
 }
-function toggleColorMode(){ colorMode=1-colorMode; document.getElementById('btnColorMode').innerHTML=colorMode===0?'🌈 СЛУЧАЙНЫЕ':'🔴🔵⚫ ПО ВЫСОТЕ'; showToast(colorMode===0?'🎨 Режим цветов: случайные':'🎨 Режим цветов: по высоте стопки'); }
+function toggleColorMode(){ colorMode=1-colorMode; document.getElementById('btnColorMode').innerHTML=colorMode===0?'🌈 СЛУЧАЙНЫЕ':'🔴🔵⚫ ПО ВЫСОТЕ'; showToast(colorMode===0?'🎨 Режим цветов: случайные':'🎨 Режим цветов: по высоте стопки (только если нет текстуры)'); }
 function resizeCanvas(){ let scale=Math.min(window.innerWidth/W,window.innerHeight/H); canvas.style.width=`${W*scale}px`; canvas.style.height=`${H*scale}px`; }
 window.addEventListener('resize',resizeCanvas);
 function handleVisibility(){ if(!gameRunning) return; if(document.hidden){ gamePaused=true; if(bgMusic) bgMusic.pause(); } else { gamePaused=false; if(bgMusic) bgMusic.play().catch(e=>{}); lastTime=0; } }
@@ -511,8 +503,8 @@ document.addEventListener('visibilitychange',handleVisibility);
 window.addEventListener('blur',()=>{ if(gameRunning){ gamePaused=true; if(bgMusic) bgMusic.pause(); }});
 window.addEventListener('focus',()=>{ if(gameRunning){ gamePaused=false; if(bgMusic) bgMusic.play().catch(e=>{}); lastTime=0; }});
 function loadAssets(cb){
-    let loaded=0, total=6;
-    let list={bg:'bg.png', run1:'run1.png', run2:'run2.png', run3:'run3.png', run4:'run4.png', heart:'heart.png'};
+    let loaded=0, total=7; // добавили box.png
+    let list={bg:'bg.png', run1:'run1.png', run2:'run2.png', run3:'run3.png', run4:'run4.png', heart:'heart.png', box:'box.png'};
     for(let [k,src] of Object.entries(list)){ let img=new Image(); img.onload=img.onerror=()=>{ loaded++; if(loaded===total) cb(); }; img.src=src; images[k]=img; }
     let titleImg=document.getElementById('titleImage'); if(titleImg){ titleImg.onerror=()=>titleImg.style.display='none'; titleImg.src='title.png'; }
     bgMusic=new Audio('music.mp3'); bgMusic.loop=true; bgMusic.volume=0.1;
