@@ -104,6 +104,10 @@ let colorMode = 0;
 let fps = 60, frameCount = 0, lastFpsUpdate = 0;
 let lastSpawnMarkerIndex = -1;
 
+// Новая переменная для толкаемого ящика (скольжение с синхронизацией скорости)
+let slidingBox = null;           // { box, targetX, startX, duration, elapsed, dir }
+let slidingAnimFrame = null;
+
 function showToast(msg, ok=true){ let d=document.createElement('div'); d.className='toast-msg'; d.textContent=msg; d.style.background=ok?'#00aa44dd':'#ff6644dd'; document.body.appendChild(d); setTimeout(()=>d.remove(),2000);}
 function getBoxBaseY(){ return boxGroundY-BOX/2; }
 function stackKey(x){ return Math.round(x/BOX)*BOX; }
@@ -196,17 +200,74 @@ function updateFalling(delta){
     }
 }
 
-function slideBox(box, targetX, oldKey, newKey, onEnd){
-    let start=box.x, dist=Math.abs(targetX-start), dur=Math.max(30,120/Math.max(0.2,pushMult)), st=performance.now();
-    blockedKeys.add(oldKey); blockedKeys.add(newKey);
-    function anim(now){
-        let t=Math.min(1,(now-st)/dur);
-        t=Math.sin(t*Math.PI/2);
-        box.x=start+(targetX-start)*t;
-        if(t<1) requestAnimationFrame(anim);
-        else { box.x=targetX; onEnd(); blockedKeys.delete(oldKey); blockedKeys.delete(newKey); }
+// НОВАЯ ФУНКЦИЯ: толкание ящика с привязкой к скорости персонажа (playerSpeed * spawnMult)
+function startSlidingBox(box, targetX, oldKey, newKey) {
+    if (slidingBox) return false; // уже толкаем другой ящик
+    // Рассчитываем время перемещения, исходя из скорости персонажа (пикселей в секунду)
+    let currentPlayerSpeed = playerSpeed * spawnMult;
+    if (currentPlayerSpeed <= 0.1) currentPlayerSpeed = 50; // fallback
+    let distance = Math.abs(targetX - box.x);
+    let durationSec = distance / currentPlayerSpeed;   // время в секундах
+    let durationMs = Math.max(50, durationSec * 1000);  // минимум 50 мс для плавности, но обычно ~300-500 мс
+    
+    slidingBox = {
+        box: box,
+        startX: box.x,
+        targetX: targetX,
+        duration: durationMs,
+        elapsed: 0,
+        oldKey: oldKey,
+        newKey: newKey,
+        active: true
+    };
+    blockedKeys.add(oldKey);
+    blockedKeys.add(newKey);
+    box.isFalling = false;
+    box.isSliding = true;
+    
+    // Запускаем анимацию на requestAnimationFrame
+    if (slidingAnimFrame) cancelAnimationFrame(slidingAnimFrame);
+    function updateSlide(timestamp) {
+        if (!slidingBox || !slidingBox.active || !gameRunning) {
+            slidingBox = null;
+            return;
+        }
+        if (!slidingBox.startTime) {
+            slidingBox.startTime = timestamp;
+            slidingAnimFrame = requestAnimationFrame(updateSlide);
+            return;
+        }
+        let now = timestamp;
+        let elapsed = now - slidingBox.startTime;
+        let t = Math.min(1, elapsed / slidingBox.duration);
+        // easing linear для синхронности
+        let newX = slidingBox.startX + (slidingBox.targetX - slidingBox.startX) * t;
+        slidingBox.box.x = newX;
+        
+        if (t >= 1.0) {
+            // завершили перемещение
+            slidingBox.box.x = slidingBox.targetX;
+            slidingBox.box.isSliding = false;
+            slidingBox.box.isFalling = true;
+            blockedKeys.delete(slidingBox.oldKey);
+            blockedKeys.delete(slidingBox.newKey);
+            slidingBox = null;
+            // после завершения заново обрабатываем падение ящика и стеки
+            if (slidingBox?.box?.active) {
+                // обновляем стеки: ящик должен упасть на новом месте
+                removeFromStack(slidingBox.box); // но его уже нет в стеке? при старте слайда мы удалили из стека
+                addToStack(slidingBox.box);
+                checkLines();
+            }
+            cancelAnimationFrame(slidingAnimFrame);
+            slidingAnimFrame = null;
+            return;
+        }
+        slidingAnimFrame = requestAnimationFrame(updateSlide);
     }
-    requestAnimationFrame(anim);
+    slidingBox.startTime = null;
+    slidingAnimFrame = requestAnimationFrame(updateSlide);
+    return true;
 }
 
 function tryPush(box,dir,force=false){
@@ -221,7 +282,22 @@ function tryPush(box,dir,force=false){
     let oldKey=stackKey(box.x), newKey=stackKey(newX);
     removeFromStack(box);
     box.isFalling=false; box.isSliding=true;
-    slideBox(box, newX, oldKey, newKey, ()=>{ box.isSliding=false; box.isFalling=true; pushCd=false; });
+    // Вместо старой slideBox используем новую синхронизированную анимацию
+    let success = startSlidingBox(box, newX, oldKey, newKey);
+    if (!success) {
+        // если не удалось (уже есть толкаемый) возвращаем ящик обратно
+        addToStack(box);
+        box.isSliding = false;
+        box.isFalling = true;
+        pushCd=false;
+        return false;
+    }
+    // Сброс pushCd произойдёт после завершения анимации. Для блокировки повторных толчков пока ящик движется
+    // Однако сам pushCd нужно сбросить не сразу, а по окончании движения, чтобы не спамить.
+    // Используем флаг slidingBox, а pushCd сбросим в отдельном таймере по длительности
+    setTimeout(() => {
+        pushCd = false;
+    }, (BOX / (playerSpeed * spawnMult + 0.1)) * 1000 + 50);
     return true;
 }
 
@@ -376,11 +452,9 @@ function draw(){
     if(images.bg && images.bg.complete) ctx.drawImage(images.bg,0,0,W,H);
     if(markersVis) for(let m of markers){ ctx.fillStyle='rgba(255,0,0,0.25)'; ctx.fillRect(m.x,0,BOX,H); ctx.strokeStyle='rgba(255,0,0,0.8)'; ctx.strokeRect(m.x,0,BOX,H); }
     
-    // Отрисовка ящиков: используем текстуру box.png если загружена, иначе цветной квадрат
     for(let b of boxes) if(b.active){ 
         if(images.box && images.box.complete){
             ctx.drawImage(images.box, b.x-BOX/2, b.y-BOX/2, BOX, BOX);
-            // Дополнительно можно добавить обводку или цветовой оттенок по желанию, но оставим чистую текстуру
         } else {
             ctx.fillStyle = getBoxColor(b);
             ctx.fillRect(b.x-BOX/2, b.y-BOX/2, BOX, BOX);
@@ -389,7 +463,6 @@ function draw(){
         }
     }
     
-    // Персонаж
     let frame = (grounded && (left||right)) ? `run${Math.floor(Date.now()/100)%4+1}` : 'run1';
     let img = images[frame];
     if(img && img.complete){
@@ -452,6 +525,8 @@ function gameLoop(now){ if(!gameRunning || gamePaused){ animId=requestAnimationF
 function gameOver(reason){ if(!gameRunning) return; gameRunning=false; if(spawnInt) clearInterval(spawnInt); if(animId) cancelAnimationFrame(animId); if(bgMusic) bgMusic.pause(); alert(`Игра окончена!\n${reason}\nОчки: ${score}`); document.getElementById('titleScreen').style.display='flex'; document.getElementById('ui').style.display='none'; document.getElementById('touchPanel').style.display='none'; }
 function fullRestart(){
     if(spawnInt) clearInterval(spawnInt); if(animId) cancelAnimationFrame(animId);
+    if(slidingAnimFrame) cancelAnimationFrame(slidingAnimFrame);
+    slidingBox = null;
     gameRunning=false; gamePaused=false; score=0; lives=3; dmgCd=0; shake=0; left=right=forcePush=false; boxes=[]; stacks.clear(); exploding=false; pushCd=false; particles=[]; blockedKeys.clear();
     playerGroundY=DEFAULTS.playerGroundY; boxGroundY=DEFAULTS.boxGroundY; standOffset=DEFAULTS.standOffset; playerSpeed=DEFAULTS.playerSpeed; fallMult=DEFAULTS.boxFallSpeed; horizTol=DEFAULTS.horizTolerance; vertTol=DEFAULTS.vertPushTolerance; pushMult=DEFAULTS.pushSpeedMult; jumpPower=DEFAULTS.jumpPower; gravity = DEFAULTS.gravity; spawnMult=1; lastSpawnMarkerIndex = -1;
     playerX=markers.length?markers[0].x+BOX/2:200; playerY=playerGroundY-PHH; playerVy=0; grounded=true; jumpCd=false;
@@ -503,7 +578,7 @@ document.addEventListener('visibilitychange',handleVisibility);
 window.addEventListener('blur',()=>{ if(gameRunning){ gamePaused=true; if(bgMusic) bgMusic.pause(); }});
 window.addEventListener('focus',()=>{ if(gameRunning){ gamePaused=false; if(bgMusic) bgMusic.play().catch(e=>{}); lastTime=0; }});
 function loadAssets(cb){
-    let loaded=0, total=7; // добавили box.png
+    let loaded=0, total=7; 
     let list={bg:'bg.png', run1:'run1.png', run2:'run2.png', run3:'run3.png', run4:'run4.png', heart:'heart.png', box:'box.png'};
     for(let [k,src] of Object.entries(list)){ let img=new Image(); img.onload=img.onerror=()=>{ loaded++; if(loaded===total) cb(); }; img.src=src; images[k]=img; }
     let titleImg=document.getElementById('titleImage'); if(titleImg){ titleImg.onerror=()=>titleImg.style.display='none'; titleImg.src='title.png'; }
